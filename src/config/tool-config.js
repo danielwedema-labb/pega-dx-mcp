@@ -9,7 +9,7 @@ export class ToolConfig {
   constructor() {
     this.categoryMap = {
       'assignments': 'PEGA_ASSIGNMENT_TOOLS',
-      'attachments': 'PEGA_ATTACHMENT_TOOLS', 
+      'attachments': 'PEGA_ATTACHMENT_TOOLS',
       'cases': 'PEGA_CASE_TOOLS',
       'casetypes': 'PEGA_CASETYPE_TOOLS',
       'dataviews': 'PEGA_DATAVIEW_TOOLS',
@@ -18,9 +18,10 @@ export class ToolConfig {
       'participants': 'PEGA_PARTICIPANT_TOOLS',
       'related_cases': 'PEGA_RELATED_CASE_TOOLS',
       'services': 'PEGA_SERVICE_TOOLS',
+      'skills': 'PEGA_SKILLS_TOOLS',
       'tags': 'PEGA_TAG_TOOLS'
     };
-    
+
     this.logLevel = process.env.LOG_LEVEL || 'info';
   }
 
@@ -35,9 +36,9 @@ export class ToolConfig {
       console.warn(`⚠️  Unknown category: ${category}`);
       return true; // Default to enabled for unknown categories
     }
-    
+
     const value = process.env[envVar];
-    
+
     // Default to enabled (true) unless explicitly set to 'false'
     return value !== 'false';
   }
@@ -54,7 +55,7 @@ export class ToolConfig {
     if (toolOverride !== undefined) {
       return toolOverride !== 'false';
     }
-    
+
     // Fall back to category setting
     return this.isCategoryEnabled(category);
   }
@@ -81,7 +82,7 @@ export class ToolConfig {
    */
   getAllCategorySettings() {
     const settings = {};
-    
+
     for (const [category, envVar] of Object.entries(this.categoryMap)) {
       settings[category] = {
         envVar: envVar,
@@ -89,7 +90,7 @@ export class ToolConfig {
         value: process.env[envVar] || 'not set (default: true)'
       };
     }
-    
+
     return settings;
   }
 
@@ -101,7 +102,7 @@ export class ToolConfig {
     const categories = this.getAllCategorySettings();
     const enabledCount = Object.values(categories).filter(cat => cat.enabled).length;
     const disabledCount = Object.keys(categories).length - enabledCount;
-    
+
     return {
       environment: this.getEnvironment(),
       logLevel: this.getLogLevel(),
@@ -119,12 +120,12 @@ export class ToolConfig {
    */
   logSummary() {
     const summary = this.getSummary();
-    
+
     console.error(`🔧 Simple Tool Configuration:`);
     console.error(`   Environment: ${summary.environment}`);
     console.error(`   Log Level: ${summary.logLevel}`);
     console.error(`   Categories: ${summary.categories.enabled}/${summary.categories.total} enabled`);
-    
+
     if (summary.categories.disabled > 0) {
       console.error(`   Disabled categories:`);
       for (const [category, config] of Object.entries(summary.settings)) {

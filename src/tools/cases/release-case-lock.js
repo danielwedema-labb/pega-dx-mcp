@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,23 +17,11 @@ export class ReleaseCaseLockTool extends BaseTool {
     return {
       name: 'release_case_lock',
       description: 'Release pessimistic lock on a Pega case and clean up any cached or pending updates. Used when canceling case operations that require locking.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          caseID: {
-            type: 'string',
-            description: 'Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces."OSIEO3-DOCSAPP-WORK T-561003". a complete case identifier including spaces and special characters.'
-          },
-          viewType: {
-            type: 'string',
-            enum: ['none', 'page'],
-            description: 'UI resources to return. "none" returns no view metadata or fields (default), "page" returns the full page UI metadata.',
-            default: 'none'
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['caseID']
-      }
+      inputSchema: z.object({
+        caseID: z.string().describe('Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces."OSIEO3-DOCSAPP-WORK T-561003". a complete case identifier including spaces and special characters.'),
+        viewType: z.enum(['none', 'page']).optional().describe('UI resources to return. "none" returns no view metadata or fields (default), "page" returns the full page UI metadata.'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

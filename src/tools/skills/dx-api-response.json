@@ -1,0 +1,479 @@
+{
+    "data": {
+        "caseInfo": {
+            "caseTypeID": "Labb-LabbCS-Work-Service-MortgageApplication",
+            "owner": "DLL_Agent",
+            "availableChildCaseTypes": [
+                {
+                    "name": "Mortgage Calculator",
+                    "links": {
+                        "submit": {
+                            "rel": "self",
+                            "href": "/cases/",
+                            "type": "POST",
+                            "title": "create child case"
+                        }
+                    },
+                    "ID": "Labb-LabbCS-Work-Service-MortgageCalculator",
+                    "canCreate": false
+                },
+                {
+                    "name": "Mortgage valuation",
+                    "links": {
+                        "submit": {
+                            "rel": "self",
+                            "href": "/cases/",
+                            "type": "POST",
+                            "title": "create child case"
+                        }
+                    },
+                    "ID": "Labb-LabbCS-Work-Service-MortgagePropertyValuation",
+                    "canCreate": true
+                }
+            ],
+            "availableActions": [
+                {
+                    "name": "Cancel this work",
+                    "links": {
+                        "open": {
+                            "rel": "self",
+                            "href": "/cases/LABB-LABBCS-WORK-SERVICE MA-61007/actions/CancelWork",
+                            "type": "GET",
+                            "title": "Get case action details"
+                        }
+                    },
+                    "ID": "CancelWork",
+                    "type": "Case"
+                },
+                {
+                    "name": "Add attachments",
+                    "links": {
+                        "open": {
+                            "rel": "self",
+                            "href": "/cases/LABB-LABBCS-WORK-SERVICE MA-61007/actions/Attachments",
+                            "type": "GET",
+                            "title": "Get case action details"
+                        }
+                    },
+                    "ID": "Attachments",
+                    "type": "Case"
+                }
+            ],
+            "associations": {
+                "follows": false
+            },
+            "lastUpdatedBy": "DLL_Agent",
+            "assignments": [
+                {
+                    "instructions": "",
+                    "canPerform": "true",
+                    "assigneeInfo": {
+                        "name": "Agent",
+                        "ID": "DLL_Agent",
+                        "type": "worklist"
+                    },
+                    "processID": "InitiateForVoiceChat",
+                    "createTime": "2026-03-31T22:44:01.232Z",
+                    "urgency": 10,
+                    "processName": "Initiate for Voice/Chat",
+                    "isMultiStep": "false",
+                    "name": "Key information",
+                    "context": "",
+                    "links": {
+                        "open": {
+                            "rel": "self",
+                            "href": "/assignments/ASSIGN-WORKLIST LABB-LABBCS-WORK-SERVICE MA-61007!INITIATEFORVOICECHAT",
+                            "type": "GET",
+                            "title": "Get assignment details"
+                        }
+                    },
+                    "ID": "ASSIGN-WORKLIST LABB-LABBCS-WORK-SERVICE MA-61007!INITIATEFORVOICECHAT",
+                    "actions": [
+                        {
+                            "name": "Key information",
+                            "links": {
+                                "submit": {
+                                    "rel": "self",
+                                    "href": "/assignments/ASSIGN-WORKLIST LABB-LABBCS-WORK-SERVICE MA-61007!INITIATEFORVOICECHAT/actions/KeyInformation",
+                                    "type": "PATCH",
+                                    "title": "Submit assignment action "
+                                },
+                                "save": {
+                                    "rel": "self",
+                                    "href": "/assignments/ASSIGN-WORKLIST LABB-LABBCS-WORK-SERVICE MA-61007!INITIATEFORVOICECHAT/actions/KeyInformation/save",
+                                    "type": "PATCH",
+                                    "title": "Save assignment action "
+                                },
+                                "open": {
+                                    "rel": "self",
+                                    "href": "/assignments/ASSIGN-WORKLIST LABB-LABBCS-WORK-SERVICE MA-61007!INITIATEFORVOICECHAT/actions/KeyInformation",
+                                    "type": "GET",
+                                    "title": "Get assignment action details"
+                                }
+                            },
+                            "ID": "KeyInformation",
+                            "type": "FlowAction"
+                        },
+                        {
+                            "name": "Transfer assignment",
+                            "links": {
+                                "open": {
+                                    "rel": "self",
+                                    "href": "/assignments/ASSIGN-WORKLIST LABB-LABBCS-WORK-SERVICE MA-61007!INITIATEFORVOICECHAT/actions/pyTransferAssignment",
+                                    "type": "GET",
+                                    "title": "Get assignment action details"
+                                }
+                            },
+                            "ID": "pyTransferAssignment",
+                            "type": "Assignment"
+                        }
+                    ]
+                }
+            ],
+            "hasNewAttachments": false,
+            "businessID": "MA-61007",
+            "sla": {
+                "goal": "2026-04-02T22:44:01.198Z",
+                "deadline": "2026-04-03T22:44:01.198Z"
+            },
+            "WidgetsToRefresh": [],
+            "caseTypeName": "Mortgage application",
+            "urgency": 10,
+            "createTime": "2026-03-31T22:44:01.191Z",
+            "createdBy": "DLL_Agent",
+            "name": "Mortgage application",
+            "stages": [
+                {
+                    "entryTime": "2026-03-31T22:44:01.230Z",
+                    "name": "Initiate",
+                    "links": {
+                        "open": {
+                            "rel": "self",
+                            "href": "/cases/LABB-LABBCS-WORK-SERVICE MA-61007/stages/PRIM0",
+                            "type": "PUT",
+                            "title": "Jump to this stage"
+                        }
+                    },
+                    "visited_status": "active",
+                    "ID": "PRIM0",
+                    "type": "Primary",
+                    "transitionType": "create"
+                },
+                {
+                    "name": "Pre-Checks",
+                    "links": {
+                        "open": {
+                            "rel": "self",
+                            "href": "/cases/LABB-LABBCS-WORK-SERVICE MA-61007/stages/PRIM2",
+                            "type": "PUT",
+                            "title": "Jump to this stage"
+                        }
+                    },
+                    "visited_status": "future",
+                    "ID": "PRIM2",
+                    "type": "Primary",
+                    "transitionType": "automatic"
+                },
+                {
+                    "name": "Document & Risk Verification",
+                    "links": {
+                        "open": {
+                            "rel": "self",
+                            "href": "/cases/LABB-LABBCS-WORK-SERVICE MA-61007/stages/PRIM3",
+                            "type": "PUT",
+                            "title": "Jump to this stage"
+                        }
+                    },
+                    "visited_status": "future",
+                    "ID": "PRIM3",
+                    "type": "Primary",
+                    "transitionType": "automatic"
+                },
+                {
+                    "name": "Underwriting & Final Offer",
+                    "links": {
+                        "open": {
+                            "rel": "self",
+                            "href": "/cases/LABB-LABBCS-WORK-SERVICE MA-61007/stages/PRIM5",
+                            "type": "PUT",
+                            "title": "Jump to this stage"
+                        }
+                    },
+                    "visited_status": "future",
+                    "ID": "PRIM5",
+                    "type": "Primary",
+                    "transitionType": "automatic"
+                },
+                {
+                    "name": "Completion & Funds Disbursement",
+                    "links": {
+                        "open": {
+                            "rel": "self",
+                            "href": "/cases/LABB-LABBCS-WORK-SERVICE MA-61007/stages/PRIM7",
+                            "type": "PUT",
+                            "title": "Jump to this stage"
+                        }
+                    },
+                    "visited_status": "future",
+                    "ID": "PRIM7",
+                    "type": "Primary",
+                    "transitionType": "resolution"
+                },
+                {
+                    "name": "Rejected",
+                    "links": {
+                        "open": {
+                            "rel": "self",
+                            "href": "/cases/LABB-LABBCS-WORK-SERVICE MA-61007/stages/ALT1",
+                            "title": "Jump to this stage",
+                            "type": "PUT"
+                        }
+                    },
+                    "visited_status": "future",
+                    "ID": "ALT1",
+                    "type": "Alternate",
+                    "transitionType": "resolution"
+                },
+                {
+                    "name": "Cancel",
+                    "visited_status": "future",
+                    "links": {
+                        "open": {
+                            "rel": "self",
+                            "href": "/cases/LABB-LABBCS-WORK-SERVICE MA-61007/stages/ALT5",
+                            "type": "PUT",
+                            "title": "Jump to this stage"
+                        }
+                    },
+                    "ID": "ALT5",
+                    "type": "Alternate",
+                    "transitionType": "resolution"
+                },
+                {
+                    "name": "Offer Declined",
+                    "links": {
+                        "open": {
+                            "rel": "self",
+                            "href": "/cases/LABB-LABBCS-WORK-SERVICE MA-61007/stages/ALT3",
+                            "title": "Jump to this stage",
+                            "type": "PUT"
+                        }
+                    },
+                    "visited_status": "future",
+                    "ID": "ALT3",
+                    "type": "Alternate",
+                    "transitionType": "resolution"
+                }
+            ],
+            "ID": "LABB-LABBCS-WORK-SERVICE MA-61007",
+            "caseTypeIcon": "case-solid",
+            "status": "New",
+            "stageID": "PRIM0",
+            "stageLabel": "Initiate",
+            "lastUpdateTime": "2026-03-31T22:44:01.235Z",
+            "content": {
+                "classID": "Labb-LabbCS-Work-Service-MortgageApplication",
+                "LoanAmountRequested": "",
+                "JourneyDesired": "",
+                "PrimaryCustomer": {
+                    "classID": "Labb-LabbCS-Data-Customer",
+                    "Email": ""
+                },
+                "ApplicantName": "",
+                "pxObjClass": "Labb-LabbCS-Work-Service-MortgageApplication",
+                "pyLabel": "Mortgage application",
+                "pyID": "MA-61007"
+            }
+        }
+    },
+    "uiResources": {
+        "resources": {
+            "views": {
+                "KeyInformation": [
+                    {
+                        "children": [
+                            {
+                                "children": [
+                                    {
+                                        "config": {
+                                            "label": "@L What is your name?",
+                                            "labelOption": "custom",
+                                            "value": "@P .ApplicantName"
+                                        },
+                                        "type": "TextInput"
+                                    },
+                                    {
+                                        "config": {
+                                            "label": "@FL .PrimaryCustomer.Email",
+                                            "labelOption": "default",
+                                            "value": "@P .PrimaryCustomer.Email"
+                                        },
+                                        "type": "Email"
+                                    },
+                                    {
+                                        "config": {
+                                            "label": "@L What is your requested loan amount (Euros)?",
+                                            "labelOption": "custom",
+                                            "showGroupSeparators": true,
+                                            "value": "@P .LoanAmountRequested"
+                                        },
+                                        "type": "Decimal"
+                                    },
+                                    {
+                                        "config": {
+                                            "datasource": "@ASSOCIATED .JourneyDesired",
+                                            "label": "@L How would you like to proceed?",
+                                            "labelOption": "custom",
+                                            "listType": "associated",
+                                            "required": true,
+                                            "value": "@P .JourneyDesired"
+                                        },
+                                        "type": "RadioButtons"
+                                    }
+                                ],
+                                "name": "Fields",
+                                "type": "Region"
+                            }
+                        ],
+                        "config": {
+                            "NumCols": "1",
+                            "instructions": "@L Thank you for your interest in applying for a mortgage with us. In order to start the process we require 3 key bits of information from you. To give you a formal offer we’ll need much more additional information than this including information income, debts and dependants. You can provide this directly to me anow but it can take up to 10 minutes. Alternatively, I can email you a link to provide this the information in your own time.",
+                            "localeReference": "@LR LABB-LABBCS-WORK-SERVICE-MORTGAGEAPPLICATION!VIEW!KEYINFORMATION",
+                            "ruleClass": "Labb-LabbCS-Work-Service-MortgageApplication",
+                            "template": "DefaultForm"
+                        },
+                        "name": "KeyInformation",
+                        "type": "View",
+                        "classID": "Labb-LabbCS-Work-Service-MortgageApplication"
+                    }
+                ]
+            },
+            "fields": {
+                "LoanAmountRequested": [
+                    {
+                        "classID": "Labb-LabbCS-Work-Service-MortgageApplication",
+                        "type": "Decimal",
+                        "displayAs": "pxNumber",
+                        "label": "Loan Amount Requested"
+                    }
+                ],
+                "JourneyDesired": [
+                    {
+                        "classID": "Labb-LabbCS-Work-Service-MortgageApplication",
+                        "type": "Text",
+                        "displayAs": "pxDropdown",
+                        "label": "JourneyDesired",
+                        "datasource": {
+                            "tableType": "PromptList",
+                            "records": [
+                                {
+                                    "key": "Agentic",
+                                    "value": "Continue via conversation"
+                                },
+                                {
+                                    "key": "SelfService",
+                                    "value": "Email me a form to complete"
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "Email": [
+                    {
+                        "classID": "Labb-LabbCS-Data-Customer",
+                        "type": "Text",
+                        "maxLength": 256,
+                        "displayAs": "pxEmail",
+                        "label": "Email",
+                        "validateAs": "ValidEmailAddress"
+                    }
+                ],
+                "PrimaryCustomer": [
+                    {
+                        "classID": "Labb-LabbCS-Work-Service-MortgageApplication",
+                        "type": "Page",
+                        "dataRetrievalType": "manual",
+                        "pageClass": "Labb-LabbCS-Data-Customer",
+                        "label": "Primary Customer"
+                    }
+                ],
+                "ApplicantName": [
+                    {
+                        "classID": "Labb-LabbCS-Work-Service-MortgageApplication",
+                        "type": "Text",
+                        "maxLength": 256,
+                        "displayAs": "pxTextInput",
+                        "label": "Applicant Name",
+                        "isDeclarativeTarget": true
+                    }
+                ],
+                "pyLabel": [
+                    {
+                        "classID": "Labb-LabbCS-Work-Service-MortgageApplication",
+                        "type": "Text",
+                        "maxLength": 64,
+                        "displayAs": "pxTextInput",
+                        "definedOnClassID": "Work-",
+                        "expectedLength": 60,
+                        "label": "Label"
+                    }
+                ],
+                "pyID": [
+                    {
+                        "classID": "Labb-LabbCS-Work-Service-MortgageApplication",
+                        "type": "Text",
+                        "maxLength": 32,
+                        "displayAs": "pxDisplayText",
+                        "definedOnClassID": "Work-Cover-",
+                        "expectedLength": 22,
+                        "label": "Case ID",
+                        "isClassKey": true
+                    }
+                ]
+            }
+        },
+        "components": [
+            "DefaultForm",
+            "Email",
+            "Decimal",
+            "RadioButtons",
+            "Region",
+            "TextInput",
+            "View"
+        ],
+        "localeReferences": [
+            "LABB-LABBCS-WORK-SERVICE-MORTGAGEAPPLICATION!CASE!MORTGAGE APPLICATION"
+        ],
+        "root": {
+            "type": "reference",
+            "config": {
+                "type": "view",
+                "name": "KeyInformation",
+                "context": "caseInfo.content"
+            }
+        },
+        "context_data": {
+            "caseInfo": {
+                "content": {
+                    "summary_of_associated_lists__": {}
+                }
+            }
+        },
+        "actionButtons": {
+            "secondary": [
+                {
+                    "jsAction": "cancelAssignment",
+                    "name": "Cancel",
+                    "actionID": "cancel"
+                }
+            ],
+            "main": [
+                {
+                    "jsAction": "finishAssignment",
+                    "name": "Submit",
+                    "actionID": "submit"
+                }
+            ]
+        }
+    }
+}

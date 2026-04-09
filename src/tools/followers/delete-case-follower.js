@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,21 +17,11 @@ export class DeleteCaseFollowerTool extends BaseTool {
     return {
       name: 'delete_case_follower',
       description: 'Remove a follower from a case, ending their subscription to case notifications and updates. Removes the follower association between case and user.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          caseID: {
-            type: 'string',
-            description: 'Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces."OSIEO3-DOCSAPP-WORK T-561003". a complete case identifier including spaces and special characters.'
-          },
-          followerID: {
-            type: 'string',
-            description: 'User ID of the follower to remove from the case. This is the unique identifier for the user in the Pega system who will no longer follow the case.'
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['caseID', 'followerID']
-      }
+      inputSchema: z.object({
+        caseID: z.string().describe('Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces."OSIEO3-DOCSAPP-WORK T-561003". a complete case identifier including spaces and special characters.'),
+        followerID: z.string().describe('User ID of the follower to remove from the case. This is the unique identifier for the user in the Pega system who will no longer follow the case.'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

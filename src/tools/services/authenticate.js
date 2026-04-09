@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,13 +17,9 @@ export class AuthenticateTool extends BaseTool {
     return {
       name: 'authenticate_pega',
       description: 'Authenticate with Pega Infinity server using OAuth2 client credentials or direct access token. Stores the authentication token in session for use by other tools. This tool should be used before making API calls when you want to explicitly manage authentication.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: []
-      }
+      inputSchema: z.object({
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

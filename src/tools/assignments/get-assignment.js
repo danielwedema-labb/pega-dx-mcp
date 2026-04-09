@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 import {
@@ -26,27 +27,12 @@ export class GetAssignmentTool extends BaseTool {
     return {
       name: 'get_assignment',
       description: 'Get assignment details including form fields, required fields, available actions, and eTag. Used BETWEEN case creation and action performance. Returns form structure, action IDs, and eTag needed for subsequent operations. Required fields marked with "required": true in view config (uiResources.resources.views). Pessimistic locking may apply.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          assignmentID: {
-            type: 'string',
-            description: 'Assignment ID from create_case (nextAssignmentInfo.ID) or perform_assignment_action. Format: ASSIGN-WORKLIST {caseID}!{processID}. Example: ASSIGN-WORKLIST PBANK-LOAN-WORK V-76003!REVIEW_FLOW'
-          },
-          viewType: {
-            type: 'string',
-            enum: ['form', 'page'],
-            description: 'UI resources to return. "form" (recommended): field metadata and view structure. "page": full page UI metadata. Both include required field markers in view config.',
-            default: 'form'
-          },
-          pageName: {
-            type: 'string',
-            description: 'If provided, returns view metadata for the pageName view (only used when viewType is "page")'
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['assignmentID']
-      }
+      inputSchema: z.object({
+        assignmentID: z.string().describe('Assignment ID from create_case (nextAssignmentInfo.ID) or perform_assignment_action. Format: ASSIGN-WORKLIST {caseID}!{processID}. Example: ASSIGN-WORKLIST PBANK-LOAN-WORK V-76003!REVIEW_FLOW'),
+        viewType: z.enum(['form', 'page']).optional().describe('UI resources to return. "form" (recommended): field metadata and view structure. "page": full page UI metadata. Both include required field markers in view config.'),
+        pageName: z.string().optional().describe('If provided, returns view metadata for the pageName view (only used when viewType is "page")'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 
@@ -236,7 +222,7 @@ export class GetAssignmentTool extends BaseTool {
     // Display UI resources info if viewType is specified
     if (data.uiResources) {
       // PRIORITY: Show current step fields first (fields actually editable in this step)
-      const currentStepFields = extractFieldsForCurrentView(data.uiResources);
+      const currentStepFields = extractFieldsForCurrentView(data.uiResources, data.data?.caseInfo?.content);
       if (currentStepFields.length > 0) {
         response += formatCurrentStepFields(currentStepFields);
       }

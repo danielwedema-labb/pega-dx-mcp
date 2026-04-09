@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,25 +17,12 @@ export class UpdateAttachmentTool extends BaseTool {
     return {
       name: 'update_attachment',
       description: 'Updates the name and category of an existing attachment for a given attachmentID. The API only updates the title and category of an existing attachment. It does not update the filename and URL. The system verifies user access to the attachment category before allowing the update.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          attachmentID: {
-            type: 'string',
-            description: 'Full ID of the Attachment, Link-Attachment instance pzInsKey (attachment ID) to update. Format example: "LINK-ATTACHMENT OSIEO3-TESTAPP03-WORK T-672011!20240104T100246.978 GMT". This is the complete instance handle key that uniquely identifies the attachment in the Pega system. The attachment must exist and be accessible to the current user.'
-          },
-          name: {
-            type: 'string',
-            description: 'New name of the attachment. This will be the display name shown for the attachment in the case. a non-empty string.'
-          },
-          category: {
-            type: 'string',
-            description: 'New attachment category. a valid attachment category that exists in the system and that the user has edit permissions for. The category determines the attachment type and associated permissions.'
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['attachmentID', 'name', 'category']
-      }
+      inputSchema: z.object({
+        attachmentID: z.string().describe('Full ID of the Attachment, Link-Attachment instance pzInsKey (attachment ID) to update. Format example: "LINK-ATTACHMENT OSIEO3-TESTAPP03-WORK T-672011!20240104T100246.978 GMT". This is the complete instance handle key that uniquely identifies the attachment in the Pega system. The attachment must exist and be accessible to the current user.'),
+        name: z.string().describe('New name of the attachment. This will be the display name shown for the attachment in the case. a non-empty string.'),
+        category: z.string().describe('New attachment category. a valid attachment category that exists in the system and that the user has edit permissions for. The category determines the attachment type and associated permissions.'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

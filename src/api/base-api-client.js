@@ -1,4 +1,5 @@
 import { OAuth2Client } from '../auth/oauth2-client.js';
+import { HarLogger } from '../utils/har-logger.js';
 
 /**
  * Base API client providing shared functionality for V1 and V2 clients
@@ -24,6 +25,7 @@ export class BaseApiClient {
 
     // Store base URL for convenience
     this.baseUrl = this.config.pega.apiBaseUrl;
+    this.dxApiLogger = new HarLogger('dx-api.har');
   }
 
   /**
@@ -67,15 +69,22 @@ export class BaseApiClient {
    * });
    */
   async makeRequest(url, options = {}) {
+    const startedDateTime = new Date().toISOString();
+    const startTime = Date.now();
+
     try {
       // Get OAuth2 token
       const token = await this.oauth2Client.getAccessToken();
 
+      // Don't force Content-Type for FormData — fetch sets it with the multipart boundary
+      const isFormData = typeof globalThis.FormData !== 'undefined' && options.body instanceof globalThis.FormData;
+
       // Prepare headers
       const headers = {
         'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
         'Accept': 'application/json',
+        'applicationId': 13,
         ...options.headers
       };
 
@@ -86,29 +95,46 @@ export class BaseApiClient {
         timeout: options.timeout || this.config.pega.requestTimeout || 30000
       });
 
-      // Handle non-2xx responses using version-specific error handler
-      if (!response.ok) {
-        return await this.handleErrorResponse(response);
-      }
-
-      // Parse successful response - handle both JSON and empty/text responses
-      let data;
+      const responseHeaders = Object.fromEntries(response.headers.entries());
       const contentType = response.headers.get('content-type');
       const contentLength = response.headers.get('content-length');
+
+      // Parse successful response - handle both JSON and empty/text responses
+      let responseBody = null;
 
       // Check if response has content and is JSON
       if (contentLength === '0' || !contentType || !contentType.includes('application/json')) {
         // Handle empty response or non-JSON response (common for DELETE operations)
         const textResponse = await response.text();
-        data = textResponse ? { message: textResponse } : { message: 'Operation completed successfully' };
+        responseBody = textResponse ? { message: textResponse } : { message: response.ok ? 'Operation completed successfully' : 'Operation failed' };
       } else {
         // Handle JSON response
         try {
-          data = await response.json();
+          responseBody = await response.json();
         } catch (jsonError) {
           // Can't read body twice - use generic success message
-          data = { message: 'Operation completed successfully' };
+          responseBody = { message: response.ok ? 'Operation completed successfully' : 'Operation failed' };
         }
+      }
+
+      this.dxApiLogger.log({
+        method: options.method || 'GET',
+        url,
+        requestHeaders: headers,
+        requestBody: options.body,
+        status: response.status,
+        statusText: response.statusText,
+        responseHeaders,
+        responseBody: responseBody,
+        startedDateTime,
+        elapsed: Date.now() - startTime
+      });
+
+      // Handle non-2xx responses — use caller-supplied handler or the version-specific default
+      if (!response.ok) {
+        const errorHandler = options.errorHandler ?? this.handleErrorResponse.bind(this);
+        const errorResult = await errorHandler(response.clone());
+        return errorResult;
       }
 
       // Extract eTag if present (V2 uses this for optimistic locking)
@@ -116,8 +142,9 @@ export class BaseApiClient {
 
       return {
         success: true,
-        data,
+        data: responseBody,
         eTag,
+        responseHeaders,
         status: response.status,
         statusText: response.statusText
       };

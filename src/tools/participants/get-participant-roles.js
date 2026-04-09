@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,17 +17,10 @@ export class GetParticipantRolesTool extends BaseTool {
     return {
       name: 'get_participant_roles',
       description: 'Retrieve list of participant roles for a specific Pega case. Returns available roles that can be assigned to case participants for access control and permission management.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          caseID: {
-            type: 'string',
-            description: 'Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces."ON6E5R-DIYRecipe-Work-RecipeCollection R-1008". a complete case identifier including spaces and special characters.'
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['caseID']
-      }
+      inputSchema: z.object({
+        caseID: z.string().describe('Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces."ON6E5R-DIYRecipe-Work-RecipeCollection R-1008". a complete case identifier including spaces and special characters.'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

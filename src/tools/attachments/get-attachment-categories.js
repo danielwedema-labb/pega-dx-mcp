@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,23 +17,11 @@ export class GetAttachmentCategoriesTool extends BaseTool {
     return {
       name: 'get_attachment_categories',
       description: 'Retrieve the list of attachment categories available for a specific Pega case, filtered by attachment type (File or URL). Returns category metadata including user permissions (view, create, edit, delete) for each attachment category associated with the case type. The API uses the class name from the caseID to get attachment categories and filters them based on the type parameter. Only attachment categories configured in the Attachment Category rule are returned. Useful for understanding what attachment categories are available and what operations the current user can perform on each category.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          caseID: {
-            type: 'string',
-            description: 'Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces."OSIEO3-DOCSAPP-WORK T-561003". The API uses the class name from this caseID to determine which attachment categories are associated with the case type.'
-          },
-          type: {
-            type: 'string',
-            enum: ['File', 'URL', 'file', 'url'],
-            description: 'Filter for the attachment type to retrieve categories for. Case insensitive. "File" or "file" returns all attachment categories of type File. "URL" or "url" returns attachment categories of type URL. Default value is "File". The API returns attachment categories of either type File or type URL during a particular API call, not both simultaneously.',
-            default: 'File'
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['caseID']
-      }
+      inputSchema: z.object({
+        caseID: z.string().describe('Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces."OSIEO3-DOCSAPP-WORK T-561003". The API uses the class name from this caseID to determine which attachment categories are associated with the case type.'),
+        type: z.enum(['File', 'URL', 'file', 'url']).optional().describe('Filter for the attachment type to retrieve categories for. Case insensitive. "File" or "file" returns all attachment categories of type File. "URL" or "url" returns attachment categories of type URL. Default value is "File". The API returns attachment categories of either type File or type URL during a particular API call, not both simultaneously.'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

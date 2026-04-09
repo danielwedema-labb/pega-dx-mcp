@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,32 +17,13 @@ export class ChangeToNextStageTool extends BaseTool {
     return {
       name: 'change_to_next_stage',
       description: 'Navigate a Pega case to its next stage in the primary stage sequence. Cannot be used when case is in alternate stage or already in final stage. If no eTag is provided, automatically fetches the latest eTag from the case action for seamless operation.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          caseID: {
-            type: 'string',
-            description: 'Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces.'
-          },
-          eTag: {
-            type: 'string',
-            description: 'Optional. Auto-fetched if omitted. For faster execution, use eTag from previous response.'
-          },
-          viewType: {
-            type: 'string',
-            enum: ['none', 'form', 'page'],
-            description: 'UI resources to return. "none" returns no UI resources (default), "form" returns form UI metadata in read-only review mode, "page" returns full page UI metadata in read-only review mode.',
-            default: 'none'
-          },
-          cleanupProcesses: {
-            type: 'boolean',
-            description: 'Whether to clean up the processes, including assignments, of the stage being switched away from. Default is true. Set to false to opt out of this cleanup feature.',
-            default: true
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['caseID']
-      }
+      inputSchema: z.object({
+        caseID: z.string().describe('Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces.'),
+        eTag: z.string().optional().describe('Optional. Auto-fetched if omitted. For faster execution, use eTag from previous response.'),
+        viewType: z.enum(['none', 'form', 'page']).optional().describe('UI resources to return. "none" returns no UI resources (default), "form" returns form UI metadata in read-only review mode, "page" returns full page UI metadata in read-only review mode.'),
+        cleanupProcesses: z.boolean().optional().describe('Whether to clean up the processes, including assignments, of the stage being switched away from. Default is true. Set to false to opt out of this cleanup feature.'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

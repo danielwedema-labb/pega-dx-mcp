@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -18,77 +19,23 @@ export class NavigateAssignmentPreviousTool extends BaseTool {
     return {
       name: 'navigate_assignment_previous',
       description: 'Navigate back to the previously visited step in a screen flow or multi-step form assignment. If no finalETag.trim() is provided, automatically fetches the latest finalETag.trim() from the assignment for seamless operation. Jumps to the previously visited navigation step from the current step. For multi-step forms and screen flows, navigation path steps are determined by the Enable navigation link checkbox. Returns assignment details with navigation breadcrumb information under uiResources when viewType is not "none". This operation requires an finalETag.trim() from a previous assignment API call for optimistic locking.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          assignmentID: {
-            type: 'string',
-            description: 'Assignment ID. Format: ASSIGN-WORKLIST {caseID}!{processID}. Example: "ASSIGN-WORKLIST MYORG-APP-WORK C-1001!PROCESS""ASSIGN-WORKLIST PBANK-LOAN-WORK V-76003!REVIEW_FLOW". a complete assignment identifier that uniquely identifies the specific assignment instance.'
-          },
-          eTag: {
-            type: 'string',
-            description: 'Optional. Auto-fetched if omitted. For faster execution, use eTag from previous response.'
-          },
-          content: {
-            type: 'object',
-            description: 'Optional map of scalar properties and embedded page properties to be set during navigation. Only fields that are part of the assignment view can be modified. Field names should match property names defined in the Pega application. Values will be applied when navigating to the previous step.'
-          },
-          pageInstructions: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                instruction: {
-                  type: 'string',
-                  enum: ['UPDATE', 'REPLACE', 'DELETE', 'APPEND', 'INSERT', 'MOVE'],
-                  description: 'Page instruction type. UPDATE (add fields to page), REPLACE (replace entire page), DELETE (remove page), APPEND (add item to page list), INSERT (insert item in page list), MOVE (reorder page list items)'
-                },
-                target: {
-                  type: 'string',
-                  description: 'Target embedded page name'
-                },
-                content: {
-                  type: 'object',
-                  description: 'Content to set on the embedded page (required for UPDATE and REPLACE)'
-                }
-              },
-              required: ['instruction', 'target'],
-              description: 'Page operation for embedded pages. Use REPLACE instruction to set embedded page references with full object including pzInsKey. Example: {"instruction": "REPLACE", "target": "PageName", "content": {"Property": "value", "pyID": "ID-123", "pzInsKey": "CLASS-NAME ID-123"}}'
-            },
-            description: 'Optional list of page-related operations for embedded pages, page lists, or page groups. Required for setting embedded page references. Only pages included in the assignment view can be modified.'
-          },
-          attachments: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                fileName: {
-                  type: 'string',
-                  description: 'Name of the attachment file'
-                },
-                fileContent: {
-                  type: 'string',
-                  description: 'Base64 encoded file content'
-                },
-                mimeType: {
-                  type: 'string',
-                  description: 'MIME type of the attachment'
-                }
-              },
-              description: 'Attachment object with file details and metadata'
-            },
-            description: 'Optional list of attachments to be added to or deleted from specific attachment fields during navigation. Each attachment entry specifies the operation (add/delete) and attachment details. Only attachment fields included in the assignment view can be modified.'
-          },
-          viewType: {
-            type: 'string',
-            enum: ['none', 'form', 'page'],
-            description: 'UI resources to return. "none" returns no UI resources (default), "form" returns form UI metadata in read-only review mode, "page" returns full page UI metadata in read-only review mode. Navigation breadcrumb information is included under uiResources when not "none".',
-            default: 'none'
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['assignmentID']
-      }
+      inputSchema: z.object({
+        assignmentID: z.string().describe('Assignment ID. Format: ASSIGN-WORKLIST {caseID}!{processID}. Example: "ASSIGN-WORKLIST MYORG-APP-WORK C-1001!PROCESS""ASSIGN-WORKLIST PBANK-LOAN-WORK V-76003!REVIEW_FLOW". a complete assignment identifier that uniquely identifies the specific assignment instance.'),
+        eTag: z.string().optional().describe('Optional. Auto-fetched if omitted. For faster execution, use eTag from previous response.'),
+        content: z.looseObject({}).optional().describe('Optional map of scalar properties and embedded page properties to be set during navigation. Only fields that are part of the assignment view can be modified. Field names should match property names defined in the Pega application. Values will be applied when navigating to the previous step.'),
+        pageInstructions: z.array(z.object({
+          instruction: z.enum(['UPDATE', 'REPLACE', 'DELETE', 'APPEND', 'INSERT', 'MOVE']).describe('Page instruction type. UPDATE (add fields to page), REPLACE (replace entire page), DELETE (remove page), APPEND (add item to page list), INSERT (insert item in page list), MOVE (reorder page list items)'),
+          target: z.string().describe('Target embedded page name'),
+          content: z.looseObject({}).optional().describe('Content to set on the embedded page (required for UPDATE and REPLACE)')
+        }).describe('Page operation for embedded pages. Use REPLACE instruction to set embedded page references with full object including pzInsKey. Example: {"instruction": "REPLACE", "target": "PageName", "content": {"Property": "value", "pyID": "ID-123", "pzInsKey": "CLASS-NAME ID-123"}}')).optional().describe('Optional list of page-related operations for embedded pages, page lists, or page groups. Required for setting embedded page references. Only pages included in the assignment view can be modified.'),
+        attachments: z.array(z.object({
+          fileName: z.string().optional().describe('Name of the attachment file'),
+          fileContent: z.string().optional().describe('Base64 encoded file content'),
+          mimeType: z.string().optional().describe('MIME type of the attachment')
+        })).optional().describe('Optional list of attachments to be added to or deleted from specific attachment fields during navigation. Each attachment entry specifies the operation (add/delete) and attachment details. Only attachment fields included in the assignment view can be modified.'),
+        viewType: z.enum(['none', 'form', 'page']).optional().describe('UI resources to return. "none" returns no UI resources (default), "form" returns form UI metadata in read-only review mode, "page" returns full page UI metadata in read-only review mode. Navigation breadcrumb information is included under uiResources when not "none".'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 
@@ -104,112 +51,112 @@ export class NavigateAssignmentPreviousTool extends BaseTool {
       sessionInfo = this.initializeSessionConfig(params);
 
       // Basic parameter validation using base class
-    const requiredValidation = this.validateRequiredParams(params, ['assignmentID']);
-    if (requiredValidation) {
-      return requiredValidation;
-    }
+      const requiredValidation = this.validateRequiredParams(params, ['assignmentID']);
+      if (requiredValidation) {
+        return requiredValidation;
+      }
 
-    // Validate enum parameters using base class
-    const enumValidation = this.validateEnumParams(params, {
-      viewType: ['none', 'form', 'page']
-    });
-    if (enumValidation) {
-      return enumValidation;
-    }
+      // Validate enum parameters using base class
+      const enumValidation = this.validateEnumParams(params, {
+        viewType: ['none', 'form', 'page']
+      });
+      if (enumValidation) {
+        return enumValidation;
+      }
 
-    // Validate optional complex parameters
-    if (content && typeof content !== 'object') {
-      return {
-        error: 'content must be an object when provided'
-      };
-    }
-
-    if (pageInstructions && !Array.isArray(pageInstructions)) {
-      return {
-        error: 'pageInstructions must be an array when provided'
-      };
-    }
-
-    if (attachments && !Array.isArray(attachments)) {
-      return {
-        error: 'attachments must be an array when provided'
-      };
-    }
-
-    // Auto-fetch eTag if not provided
-    let finalETag = eTag;
-    let autoFetchedETag = false;
-    
-    if (!finalETag) {
-      try {
-          console.error(`Auto-fetching latest eTag for assignment navigation on ${assignmentID}...`);
-        const response = await this.pegaClient.getAssignment(assignmentID.trim(), {
-          viewType: 'form'  // Use form view for eTag retrieval
-        });
-        
-        if (!response || !response.success) {
-          const errorMsg = `Failed to auto-fetch eTag: ${response?.error?.message || 'Unknown error'}`;
-          return {
-            error: errorMsg
-          };
-        }
-        
-        finalETag = response.eTag;
-        autoFetchedETag = true;
-          console.error(`Successfully auto-fetched eTag: ${finalETag}`);
-        
-        if (!finalETag) {
-          const errorMsg = 'Auto-fetch succeeded but no finalETag.trim() was returned from getAssignment. This may indicate a server issue.';
-          return {
-            error: errorMsg
-          };
-        }
-      } catch (error) {
-        const errorMsg = `Failed to auto-fetch eTag: ${error.message}`;
+      // Validate optional complex parameters
+      if (content && typeof content !== 'object') {
         return {
-          error: errorMsg
+          error: 'content must be an object when provided'
         };
       }
-    }
-    
-    // Validate eTag format (should be a timestamp-like string)
-    if (typeof finalETag !== 'string' || finalETag.trim().length === 0) {
-      return {
-        error: 'Invalid finalETag.trim() parameter. a non-empty string representing case save date time.'
-      };
-    }
 
-
-
-    // Prepare request options
-    const options = {};
-    
-    if (content) options.content = content;
-    if (pageInstructions) options.pageInstructions = pageInstructions;
-    if (attachments) options.attachments = attachments;
-    if (viewType) options.viewType = viewType;
-
-    try {
-      // Execute navigation via API client
-      const result = await this.pegaClient.navigateAssignmentPrevious(
-        assignmentID,
-        finalETag,
-        options
-      );
-
-      // Check if API call was successful
-      if (result.success) {
-        // Format and return successful response
-        return this.formatSuccessResponse(result.data, { ...params, newETag: result.eTag });
-      } else {
-        // Format and return error response from API
-        return this.formatErrorResponse(result.error);
+      if (pageInstructions && !Array.isArray(pageInstructions)) {
+        return {
+          error: 'pageInstructions must be an array when provided'
+        };
       }
 
-    } catch (error) {
-      // Format and return error response
-      return this.formatErrorResponse(error);
-    }
+      if (attachments && !Array.isArray(attachments)) {
+        return {
+          error: 'attachments must be an array when provided'
+        };
+      }
+
+      // Auto-fetch eTag if not provided
+      let finalETag = eTag;
+      let autoFetchedETag = false;
+
+      if (!finalETag) {
+        try {
+          console.error(`Auto-fetching latest eTag for assignment navigation on ${assignmentID}...`);
+          const response = await this.pegaClient.getAssignment(assignmentID.trim(), {
+            viewType: 'form'  // Use form view for eTag retrieval
+          });
+
+          if (!response || !response.success) {
+            const errorMsg = `Failed to auto-fetch eTag: ${response?.error?.message || 'Unknown error'}`;
+            return {
+              error: errorMsg
+            };
+          }
+
+          finalETag = response.eTag;
+          autoFetchedETag = true;
+          console.error(`Successfully auto-fetched eTag: ${finalETag}`);
+
+          if (!finalETag) {
+            const errorMsg = 'Auto-fetch succeeded but no finalETag.trim() was returned from getAssignment. This may indicate a server issue.';
+            return {
+              error: errorMsg
+            };
+          }
+        } catch (error) {
+          const errorMsg = `Failed to auto-fetch eTag: ${error.message}`;
+          return {
+            error: errorMsg
+          };
+        }
+      }
+
+      // Validate eTag format (should be a timestamp-like string)
+      if (typeof finalETag !== 'string' || finalETag.trim().length === 0) {
+        return {
+          error: 'Invalid finalETag.trim() parameter. a non-empty string representing case save date time.'
+        };
+      }
+
+
+
+      // Prepare request options
+      const options = {};
+
+      if (content) options.content = content;
+      if (pageInstructions) options.pageInstructions = pageInstructions;
+      if (attachments) options.attachments = attachments;
+      if (viewType) options.viewType = viewType;
+
+      try {
+        // Execute navigation via API client
+        const result = await this.pegaClient.navigateAssignmentPrevious(
+          assignmentID,
+          finalETag,
+          options
+        );
+
+        // Check if API call was successful
+        if (result.success) {
+          // Format and return successful response
+          return this.formatSuccessResponse(result.data, { ...params, newETag: result.eTag });
+        } else {
+          // Format and return error response from API
+          return this.formatErrorResponse(result.error);
+        }
+
+      } catch (error) {
+        // Format and return error response
+        return this.formatErrorResponse(error);
+      }
     } catch (error) {
       return {
         content: [{
@@ -271,7 +218,7 @@ export class NavigateAssignmentPreviousTool extends BaseTool {
           markdown += `  - Assignee: ${assignment.assigneeInfo?.name || 'N/A'}\n`;
           markdown += `  - Urgency: ${assignment.urgency}\n`;
           markdown += `  - Can Perform: ${assignment.canPerform}\n`;
-          
+
           if (assignment.actions && assignment.actions.length > 0) {
             markdown += `  - Available Actions: ${assignment.actions.map(a => a.name).join(', ')}\n`;
           }
@@ -292,8 +239,8 @@ export class NavigateAssignmentPreviousTool extends BaseTool {
       if (caseInfo.stages && caseInfo.stages.length > 0) {
         markdown += `### Case Stages\n`;
         caseInfo.stages.forEach(stage => {
-          const status = stage.visited_status === 'active' ? '🔄' : 
-                        stage.visited_status === 'completed' ? '✅' : '⭕';
+          const status = stage.visited_status === 'active' ? '🔄' :
+            stage.visited_status === 'completed' ? '✅' : '⭕';
           markdown += `${status} **${stage.name}** (${stage.ID}) - ${stage.visited_status}\n`;
           if (stage.entryTime) {
             markdown += `   Entry Time: ${stage.entryTime}\n`;
@@ -307,12 +254,12 @@ export class NavigateAssignmentPreviousTool extends BaseTool {
     if (data.uiResources && data.uiResources.navigation && params.viewType !== 'none') {
       markdown += `## Navigation Context\n\n`;
       markdown += `**View Type:** ${params.viewType}\n`;
-      
+
       if (data.uiResources.navigation.breadcrumb) {
         markdown += `**Navigation Breadcrumb:** Available\n`;
         markdown += `The navigation breadcrumb information has been loaded and can be used to build navigation UI components.\n`;
       }
-      
+
       if (data.uiResources.navigation.steps) {
         markdown += `**Navigation Steps:** ${data.uiResources.navigation.steps.length} steps available\n`;
       }
@@ -323,13 +270,13 @@ export class NavigateAssignmentPreviousTool extends BaseTool {
     if (data.uiResources && params.viewType !== 'none') {
       markdown += `## UI Resources\n\n`;
       markdown += `**View Type:** ${params.viewType}\n`;
-      
+
       if (data.uiResources.resources) {
         if (data.uiResources.resources.views) {
           const viewCount = Object.keys(data.uiResources.resources.views).length;
           markdown += `**Available Views:** ${viewCount}\n`;
         }
-        
+
         if (data.uiResources.resources.fields) {
           const fieldCount = Object.keys(data.uiResources.resources.fields).length;
           markdown += `**Available Fields:** ${fieldCount}\n`;

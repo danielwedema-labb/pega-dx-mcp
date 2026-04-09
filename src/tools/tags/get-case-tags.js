@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,17 +17,10 @@ export class GetCaseTagsTool extends BaseTool {
     return {
       name: 'get_case_tags',
       description: 'Get list of tags associated to a case',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          caseID: {
-            type: 'string',
-            description: 'Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces."OSIEO3-DOCSAPP-WORK T-561003". a complete case identifier including spaces and special characters.'
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['caseID']
-      }
+      inputSchema: z.object({
+        caseID: z.string().describe('Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces."OSIEO3-DOCSAPP-WORK T-561003". a complete case identifier including spaces and special characters.'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

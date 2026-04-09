@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 import {
@@ -22,32 +23,13 @@ export class GetCaseActionTool extends BaseTool {
     return {
       name: 'get_case_action',
       description: 'Get detailed information about a case action, including view metadata and available actions',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          caseID: {
-            type: 'string',
-            description: 'Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces.'
-          },
-          actionID: {
-            type: 'string',
-            description: 'Action ID for case/stage action (Example: "pyUpdateCaseDetails", "pyApproval"). CRITICAL: Action IDs are CASE-SENSITIVE and have no spaces even if display names do ("Edit details" → "pyUpdateCaseDetails"). Use get_case to find correct ID from availableActions array - use "ID" field not "name" field.'
-          },
-          viewType: {
-            type: 'string',
-            enum: ['none', 'form', 'page'],
-            description: 'UI resources to return. "none" returns no UI resources, "form" returns only form UI metadata, "page" returns full case page UI metadata',
-            default: 'page'
-          },
-          excludeAdditionalActions: {
-            type: 'boolean',
-            description: 'When true, excludes information on all actions performable on the case. Set to true if action information was already retrieved in a previous call',
-            default: false
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['caseID', 'actionID']
-      }
+      inputSchema: z.object({
+        caseID: z.string().describe('Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces.'),
+        actionID: z.string().describe('Action ID for case/stage action (Example: "pyUpdateCaseDetails", "pyApproval"). CRITICAL: Action IDs are CASE-SENSITIVE and have no spaces even if display names do ("Edit details" → "pyUpdateCaseDetails"). Use get_case to find correct ID from availableActions array - use "ID" field not "name" field.'),
+        viewType: z.enum(['none', 'form', 'page']).optional().describe('UI resources to return. "none" returns no UI resources, "form" returns only form UI metadata, "page" returns full case page UI metadata'),
+        excludeAdditionalActions: z.boolean().optional().describe('When true, excludes information on all actions performable on the case. Set to true if action information was already retrieved in a previous call'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

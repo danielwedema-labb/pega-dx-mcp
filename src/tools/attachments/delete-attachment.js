@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,17 +17,10 @@ export class DeleteAttachmentTool extends BaseTool {
     return {
       name: 'delete_attachment',
       description: 'Remove the specified attachment from a case. The API validates user authentication and privileges to delete the attachment based on attachment category configuration. Users can delete attachments they uploaded or any attachment of categories they have delete privileges for. After successful deletion, the case history is updated. If an attachment is linked to multiple Link-Attachment objects, only the specific link is removed.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          attachmentID: {
-            type: 'string',
-            description: 'Full ID of the attachment to delete. Format example: "LINK-ATTACHMENT ONNS8O-TESTAPP-WORK B-2001!20211115T061748.900 GMT". This is the complete Link-Attachment instance pzInsKey that uniquely identifies the attachment in the Pega system. The attachment must exist and the user must have delete privileges for the attachment category.'
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['attachmentID']
-      }
+      inputSchema: z.object({
+        attachmentID: z.string().describe('Full ID of the attachment to delete. Format example: "LINK-ATTACHMENT ONNS8O-TESTAPP-WORK B-2001!20211115T061748.900 GMT". This is the complete Link-Attachment instance pzInsKey that uniquely identifies the attachment in the Pega system. The attachment must exist and the user must have delete privileges for the attachment category.'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

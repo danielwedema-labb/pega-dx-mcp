@@ -359,7 +359,7 @@ export function extractFieldMetadata(uiResources) {
  * @param {Object} uiResources - UI resources from API response
  * @returns {Array} Array of field objects for the current view only
  */
-export function extractFieldsForCurrentView(uiResources) {
+export function extractFieldsForCurrentView(uiResources, content = {}) {
   const fields = [];
   const fieldNamesInView = new Set();
 
@@ -379,6 +379,13 @@ export function extractFieldsForCurrentView(uiResources) {
     return match ? match[1] : null;
   };
 
+  const resolveName = (nameRef) => {
+    if (nameRef.startsWith('@P')) {
+      return content[extractFieldNameFromRef(nameRef)] || nameRef; // Resolve from content if available
+    }
+    return nameRef;
+  }
+
   /**
    * Recursively traverse view children to find field references
    */
@@ -396,7 +403,7 @@ export function extractFieldsForCurrentView(uiResources) {
 
       // Handle reference components - follow them to their view
       if (child.type === 'reference' && child.config?.name) {
-        const referencedViewName = child.config.name;
+        const referencedViewName = resolveName(child.config.name);
         traverseView(referencedViewName);
       }
 
@@ -434,7 +441,8 @@ export function extractFieldsForCurrentView(uiResources) {
 
   // Now build field metadata only for fields found in the current view
   for (const fieldName of fieldNamesInView) {
-    const fieldArray = fieldsResource[fieldName];
+    const fieldInPage = fieldName.split('.').reverse()[0] // Get base field name for lookup (e.g., "Address.pyCity" → "pyCity")
+    const fieldArray = fieldsResource[fieldInPage]; 
     if (!Array.isArray(fieldArray) || fieldArray.length === 0) continue;
 
     const fieldDef = fieldArray[0];

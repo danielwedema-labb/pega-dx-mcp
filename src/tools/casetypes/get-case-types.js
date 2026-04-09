@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,13 +17,9 @@ export class GetCaseTypesTool extends BaseTool {
     return {
       name: 'get_case_types',
       description: 'Get list of case types that the user can create in the application. Use returned classID as caseTypeID in create_case. create_case automatically discovers required fields if needed.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: []
-      }
+      inputSchema: z.object({
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

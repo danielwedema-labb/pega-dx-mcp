@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -32,118 +33,14 @@ export class GetListDataViewTool extends BaseTool {
 Filter comparators supported: boolean (IS_TRUE, IS_FALSE, IS_NULL, IS_NOT_NULL, EQ, NEQ), string (EQ, NEQ, IN, NOT_IN, IS_NULL, IS_NOT_NULL, STARTS_WITH, NOT_STARTS_WITH, ENDS_WITH, NOT_ENDS_WITH, CONTAINS, NOT_CONTAINS), number/date (EQ, NEQ, IN, NOT_IN, GT, GTE, LT, LTE, ISNULL, ISNOTNULL).
 
 Aggregation functions: COUNT, MAX, MIN, DISTINCT_COUNT. For numbers: SUM, AVG.`,
-      inputSchema: {
-        type: 'object',
-        properties: {
-          dataViewID: {
-            type: 'string',
-            description: 'Data view ID. Example: "D_CaseList"'
-          },
-          dataViewParameters: {
-            type: 'object',
-            description: 'Parameters for parameterized data views. Key-value pairs. Example: {"CustomerID": "C-123"}'
-          },
-          query: {
-            type: 'object',
-            description: 'Optional query object for filtering, sorting, aggregation, and field selection. If not specified, retrieves data as a regular data view.',
-            properties: {
-              select: {
-                type: 'array',
-                description: 'Array of field objects to select. Each object should have a "field" property. Example: [{"field": "Name"}, {"field": "Age"}, {"field": "DOB"}]',
-                items: {
-                  type: 'object',
-                  properties: {
-                    field: {
-                      type: 'string',
-                      description: 'Field name to select'
-                    }
-                  },
-                  required: ['field']
-                }
-              },
-              sortBy: {
-                type: 'array',
-                description: 'Array of sorting configurations. Each object can specify field name with type (ASC/DESC) or aggregation name with type. Example: [{"field": "Name", "type": "ASC"}, {"aggregation": "AverageAge", "type": "DESC"}]',
-                items: {
-                  type: 'object',
-                  properties: {
-                    field: {
-                      type: 'string',
-                      description: 'Field name to sort by'
-                    },
-                    aggregation: {
-                      type: 'string',
-                      description: 'Aggregation name to sort by'
-                    },
-                    type: {
-                      type: 'string',
-                      enum: ['ASC', 'DESC'],
-                      description: 'Sort direction - ascending or descending',
-                      default: 'ASC'
-                    }
-                  }
-                }
-              },
-              filter: {
-                type: 'object',
-                description: 'Complex filtering conditions with support for multiple comparators and logical operators.',
-                properties: {
-                  filterConditions: {
-                    type: 'object',
-                    description: 'Object containing filter conditions. Each key (F1, F2, etc.) represents a condition with lhs (left-hand side), comparator, and rhs (right-hand side). Example: {"F1": {"ignoreCase": true, "lhs": {"field": "firstname"}, "comparator": "EQ", "rhs": {"value": "abc"}}, "F2": {"lhs": {"field": "IsRetired"}, "comparator": "IS_TRUE"}}'
-                  },
-                  logic: {
-                    type: 'string',
-                    description: 'Logical expression combining filter conditions using AND/OR operators. Supports parentheses. Examples: "F1", "F1 AND F2", "(F1 AND F2) OR (F3 AND F4)". Default is AND.',
-                    default: 'AND'
-                  }
-                }
-              },
-              aggregations: {
-                type: 'object',
-                description: 'Object containing aggregation definitions. Each key is a unique name for the aggregation, each value contains field and summaryFunction. Example: {"AverageAge": {"field": "age", "summaryFunction": "AVG"}, "EmployeeCount": {"field": "EmployeeID", "summaryFunction": "COUNT"}}'
-              },
-              distinctResultsOnly: {
-                type: 'boolean',
-                description: 'Set to true to return distinct set of results only. Cannot be specified with aggregation. Use with select fields to get unique combinations.',
-                default: false
-              }
-            }
-          },
-          paging: {
-            type: 'object',
-            description: 'Optional pagination configuration. Can specify either maxResultsToFetch or pageNumber/pageSize combination, but not both.',
-            properties: {
-              pageNumber: {
-                type: 'integer',
-                minimum: 1,
-                description: 'Page number to retrieve (1-based). Use with pageSize. Cannot be used with maxResultsToFetch.',
-                default: 1
-              },
-              pageSize: {
-                type: 'integer',
-                minimum: 1,
-                maximum: 5000,
-                description: 'Number of records per page. Maximum value is 5000. Use with pageNumber. Cannot be used with maxResultsToFetch.',
-                default: 100
-              },
-              maxResultsToFetch: {
-                type: 'integer',
-                minimum: 1,
-                maximum: 5000,
-                description: 'Maximum number of results to fetch when data is not paginated. Default and maximum value is 5000. Cannot be used with pageNumber/pageSize.'
-              }
-            }
-          },
-          useExtendedTimeout: {
-            type: 'boolean',
-            description: 'Optional flag that works only if the data view is sourced by a report definition. When set to true, increases timeout to 45 seconds. Otherwise, timeout is 10 seconds.',
-            default: false
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['dataViewID']
-      }
+      inputSchema: z.object({
+        dataViewID: z.string().describe('Data view ID. Example: "D_CaseList"'),
+        dataViewParameters: z.looseObject({}).optional().describe('Parameters for data views. Key-value pairs. Example: {"CustomerID": "C-123"}'),
+        query: z.looseObject({}).optional().describe('Optional query object for filtering, sorting, aggregation, and field selection. If not specified, retrieves data as a regular data view.'),
+        paging: z.looseObject({}).optional().describe('Optional pagination configuration. Can specify either maxResultsToFetch or pageNumber/pageSize combination, but not both.'),
+        useExtendedTimeout: z.boolean().optional().describe('Optional flag that works only if the data view is sourced by a report definition. When set to true, increases timeout to 45 seconds. Otherwise, timeout is 10 seconds.'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

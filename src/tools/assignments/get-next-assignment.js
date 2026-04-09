@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,23 +17,11 @@ export class GetNextAssignmentTool extends BaseTool {
     return {
       name: 'get_next_assignment',
       description: 'Get detailed information about the next assignment to be performed by the requestor. Uses Get Next Work functionality to fetch the assignment most suitable for the current user.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          viewType: {
-            type: 'string',
-            enum: ['form', 'page'],
-            description: 'UI resources to return. "form" returns only assignment UI metadata in uiResources object, "page" returns full page (read-only review mode) UI metadata in uiResources object',
-            default: 'page'
-          },
-          pageName: {
-            type: 'string',
-            description: 'If provided, view metadata for specific page name will be returned (only used when viewType is "page")'
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: []
-      }
+      inputSchema: z.object({
+        viewType: z.enum(['form', 'page']).optional().describe('UI resources to return. "form" returns only assignment UI metadata in uiResources object, "page" returns full page (read-only review mode) UI metadata in uiResources object'),
+        pageName: z.string().optional().describe('If provided, view metadata for specific page name will be returned (only used when viewType is "page")'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

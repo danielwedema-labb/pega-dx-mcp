@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -15,32 +16,14 @@ export class GetCaseTool extends BaseTool {
   static getDefinition() {
     return {
       name: 'get_case',
-      description: 'Get comprehensive case information including status, stage, assignments, and available actions. Use AFTER workflow completion or for case overview. Not recommended immediately after create_case (redundant). For working on assignments, use get_assignment instead.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          caseID: {
-            type: 'string',
-            description: 'Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces.'
-          },
-          viewType: {
-            type: 'string',
-            enum: ['none', 'page'],
-            description: 'UI resources to return. "none" returns no UI resources, "page" returns full page UI metadata',
-            default: 'none'
-          },
-          pageName: {
-            type: 'string',
-            description: 'If provided, view metadata for specific page name will be returned (only used when viewType is "page")'
-          },
-          originChannel: {
-            type: 'string',
-            description: 'Origin of this service. E.g. - Web, Mobile etc.'
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['caseID']
-      }
+      description: 'Get comprehensive case information. \n\n**Important**: The `caseID` must be a full case ID containing a space (e.g. "MYORG-APP-WORK C-1001"). If the provided ID contains no space, call the `search_case` tool first to resolve the full case ID before calling this tool.',
+      inputSchema: z.object({
+        caseID: z.string().describe('Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces.'),
+        viewType: z.enum(['none', 'page']).optional().describe('UI resources to return. "none" returns no UI resources, "page" returns full page UI metadata'),
+        pageName: z.string().optional().describe('If provided, view metadata for specific page name will be returned (only used when viewType is "page")'),
+        originChannel: z.string().optional().describe('Origin of this service. E.g. - Web, Mobile etc.'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

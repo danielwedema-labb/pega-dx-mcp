@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -14,23 +15,13 @@ export class DeleteCaseTagTool extends BaseTool {
    */
   static getDefinition() {
     return {
-      name: 'delete_case_tag', 
+      name: 'delete_case_tag',
       description: 'Delete a specific tag from a case by case ID and tag ID',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          caseID: {
-            type: 'string',
-            description: 'Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces."OSIEO3-DOCSAPP-WORK T-561003". a complete case identifier including spaces and special characters.'
-          },
-          tagID: {
-            type: 'string',
-            description: 'Tag ID to be deleted from the case. This is the unique identifier of the specific tag to remove.'
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['caseID', 'tagID']
-      }
+      inputSchema: z.object({
+        caseID: z.string().describe('Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces."OSIEO3-DOCSAPP-WORK T-561003". a complete case identifier including spaces and special characters.'),
+        tagID: z.string().describe('Tag ID to be deleted from the case. This is the unique identifier of the specific tag to remove.'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

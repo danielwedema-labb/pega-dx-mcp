@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,17 +17,10 @@ export class GetDocumentTool extends BaseTool {
     return {
       name: 'get_document',
       description: 'Get contents of a document as base64 encoded string. Downloads document content based on the documentID parameter. The API validates the documentID and checks if the user has access to view the document before returning the base64 encoded content.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          documentID: {
-            type: 'string',
-            description: 'Document ID to retrieve content for. This is the unique identifier that identifies the specific document in the Pega system. The document must exist and be accessible to the current user.'
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['documentID']
-      }
+      inputSchema: z.object({
+        documentID: z.string().describe('Document ID to retrieve content for. This is the unique identifier that identifies the specific document in the Pega system. The document must exist and be accessible to the current user.'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

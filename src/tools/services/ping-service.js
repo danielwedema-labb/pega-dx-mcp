@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,13 +17,9 @@ export class PingServiceTool extends BaseTool {
     return {
       name: 'ping_pega_service',
       description: 'Test connectivity and system availability of Pega Infinity server using existing authentication. Makes a lightweight API call to verify the server is responding. Use authenticate_pega tool first if you need to establish authentication.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: []
-      }
+      inputSchema: z.object({
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

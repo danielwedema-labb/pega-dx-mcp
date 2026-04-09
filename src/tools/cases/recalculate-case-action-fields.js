@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,102 +17,29 @@ export class RecalculateCaseActionFieldsTool extends BaseTool {
     return {
       name: 'recalculate_case_action_fields',
       description: 'Recalculate calculated fields & whens for the current case action form. If no eTag is provided, automatically fetches the latest eTag from the case action for seamless operation. Executes field calculations and when conditions based on current form state and user input. Supports recalculating specific fields and when conditions, merging content updates, and applying page instructions during the calculation process. The API validates case and action IDs, processes calculation requests, and returns updated field values and states.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          caseID: {
-            type: 'string',
-            description: 'Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces."ON6E5R-DIYRecipe-Work-RecipeCollection R-1008". a complete case identifier including spaces and special characters.'
-          },
-          actionID: {
-            type: 'string',
-            description: 'Action ID for case/stage action (Example: "pyUpdateCaseDetails", "pyApproval"). CRITICAL: Action IDs are CASE-SENSITIVE and have no spaces even if display names do ("Edit details" → "pyUpdateCaseDetails"). Use get_case to find correct ID from availableActions array - use "ID" field not "name" field.'
-          },
-          eTag: {
-            type: 'string',
-            description: 'Optional. Auto-fetched if omitted. For faster execution, use eTag from previous response.'
-          },
-          calculations: {
-            type: 'object',
-            description: 'Required object containing fields and when conditions to recalculate. Must contain at least one of fields or whens arrays.',
-            properties: {
-              fields: {
-                type: 'array',
-                description: 'Array of field objects to recalculate. Each field object must contain name and context properties.',
-                items: {
-                  type: 'object',
-                  properties: {
-                    name: {
-                      type: 'string',
-                      description: 'Name of the field to recalculate. a valid property reference within the case action view.'
-                    },
-                    context: {
-                      type: 'string',
-                      description: 'Context or page reference for the field calculation. Specifies the data context in which the field calculation should be performed.'
-                    }
-                  },
-                  required: ['name', 'context'],
-                  additionalProperties: false
-                }
-              },
-              whens: {
-                type: 'array',
-                description: 'Array of when condition objects to recalculate. Each when object must contain name and context properties.',
-                items: {
-                  type: 'object',
-                  properties: {
-                    name: {
-                      type: 'string',
-                      description: 'Name of the when condition to recalculate. a valid when rule reference accessible within the case action context.'
-                    },
-                    context: {
-                      type: 'string',
-                      description: 'Context or page reference for the when condition evaluation. Specifies the data context in which the when condition should be evaluated.'
-                    }
-                  },
-                  required: ['name', 'context'],
-                  additionalProperties: false
-                }
-              }
-            },
-            additionalProperties: false
-          },
-          content: {
-            type: 'object',
-            description: 'Optional map of scalar properties and embedded page properties to be merged into the case during the recalculation process. Field values provided here will be available for use in calculations. Only fields that are present in the case action\'s view can be effectively utilized in calculations.'
-          },
-          pageInstructions: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                instruction: {
-                  type: 'string',
-                  enum: ['UPDATE', 'REPLACE', 'DELETE', 'APPEND', 'INSERT', 'MOVE'],
-                  description: 'Page instruction type. UPDATE (add fields to page), REPLACE (replace entire page), DELETE (remove page), APPEND (add item to page list), INSERT (insert item in page list), MOVE (reorder page list items)'
-                },
-                target: {
-                  type: 'string',
-                  description: 'Target embedded page name'
-                },
-                content: {
-                  type: 'object',
-                  description: 'Content to set on the embedded page (required for UPDATE and REPLACE)'
-                }
-              },
-              required: ['instruction', 'target'],
-              description: 'Page operation for embedded pages. Use REPLACE instruction to set embedded page references with full object including pzInsKey. Example: {"instruction": "REPLACE", "target": "PageName", "content": {"Property": "value", "pyID": "ID-123", "pzInsKey": "CLASS-NAME ID-123"}}'
-            },
-            description: 'Optional list of page-related operations for embedded pages, page lists, or page groups. Required for setting embedded page references.'
-          },
-          originChannel: {
-            type: 'string',
-            description: 'Optional origin channel identifier for this service request. Indicates the source of the request for tracking and audit purposes. Examples: "Web", "Mobile", "WebChat". Default value is "Web" if not specified.'
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['caseID', 'actionID', 'calculations']
-      }
+      inputSchema: z.object({
+        caseID: z.string().describe('Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces."ON6E5R-DIYRecipe-Work-RecipeCollection R-1008". a complete case identifier including spaces and special characters.'),
+        actionID: z.string().describe('Action ID for case/stage action (Example: "pyUpdateCaseDetails", "pyApproval"). CRITICAL: Action IDs are CASE-SENSITIVE and have no spaces even if display names do ("Edit details" → "pyUpdateCaseDetails"). Use get_case to find correct ID from availableActions array - use "ID" field not "name" field.'),
+        eTag: z.string().optional().describe('Optional. Auto-fetched if omitted. For faster execution, use eTag from previous response.'),
+        calculations: z.object({
+          fields: z.array(z.object({
+            name: z.string().describe('Name of the field to recalculate. a valid property reference within the case action view.'),
+            context: z.string().describe('Context or page reference for the field calculation. Specifies the data context in which the field calculation should be performed.')
+          })).optional().describe('Array of field objects to recalculate. Each field object must contain name and context properties.'),
+          whens: z.array(z.object({
+            name: z.string().describe('Name of the when condition to recalculate. a valid when rule reference accessible within the case action context.'),
+            context: z.string().describe('Context or page reference for the when condition evaluation. Specifies the data context in which the when condition should be evaluated.')
+          })).optional().describe('Array of when condition objects to recalculate. Each when object must contain name and context properties.')
+        }).describe('Required object containing fields and when conditions to recalculate. Must contain at least one of fields or whens arrays.'),
+        content: z.looseObject({}).optional().describe('Optional map of scalar properties and embedded page properties to be merged into the case during the recalculation process. Field values provided here will be available for use in calculations. Only fields that are present in the case action\'s view can be effectively utilized in calculations.'),
+        pageInstructions: z.array(z.object({
+          instruction: z.enum(['UPDATE', 'REPLACE', 'DELETE', 'APPEND', 'INSERT', 'MOVE']).describe('Page instruction type. UPDATE (add fields to page), REPLACE (replace entire page), DELETE (remove page), APPEND (add item to page list), INSERT (insert item in page list), MOVE (reorder page list items)'),
+          target: z.string().describe('Target embedded page name'),
+          content: z.looseObject({}).optional().describe('Content to set on the embedded page (required for UPDATE and REPLACE)')
+        }).describe('Page operation for embedded pages. Use REPLACE instruction to set embedded page references with full object including pzInsKey. Example: {"instruction": "REPLACE", "target": "PageName", "content": {"Property": "value", "pyID": "ID-123", "pzInsKey": "CLASS-NAME ID-123"}}')).optional().describe('Optional list of page-related operations for embedded pages, page lists, or page groups. Required for setting embedded page references.'),
+        originChannel: z.string().optional().describe('Optional origin channel identifier for this service request. Indicates the source of the request for tracking and audit purposes. Examples: "Web", "Mobile", "WebChat". Default value is "Web" if not specified.'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

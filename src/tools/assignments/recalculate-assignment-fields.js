@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,98 +17,28 @@ export class RecalculateAssignmentFieldsTool extends BaseTool {
     return {
       name: 'recalculate_assignment_fields',
       description: 'Recalculate calculated fields & whens for the current assignment action form. If no eTag is provided, automatically fetches the latest eTag from the assignment for seamless operation. Executes field calculations and when conditions based on current form state and user input. Supports recalculating specific fields and when conditions, merging content updates, and applying page instructions during the calculation process. The API validates assignment and action IDs, processes calculation requests, and returns updated field values and states.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          assignmentID: {
-            type: 'string',
-            description: 'Assignment ID. Format: ASSIGN-WORKLIST {caseID}!{processID}. Example: "ASSIGN-WORKLIST MYORG-APP-WORK C-1001!PROCESS"'
-          },
-          actionID: {
-            type: 'string',
-            description: 'Action ID from assignment (Example: "pyApproval", "Submit"). CRITICAL: Action IDs are CASE-SENSITIVE and have no spaces even if display names do ("Complete Review" → "CompleteReview"). Use get_assignment to find correct ID from actions array - use "ID" field not "name" field.'
-          },
-          eTag: {
-            type: 'string',
-            description: 'Optional. Auto-fetched if omitted. For faster execution, use eTag from previous response.'
-          },
-          calculations: {
-            type: 'object',
-            description: 'Required object containing fields and when conditions to recalculate. Must contain at least one of fields or whens arrays.',
-            properties: {
-              fields: {
-                type: 'array',
-                description: 'Array of field objects to recalculate. Each field object must contain name and context properties.',
-                items: {
-                  type: 'object',
-                  properties: {
-                    name: {
-                      type: 'string',
-                      description: 'Name of the field to recalculate. a valid property reference within the assignment action view.'
-                    },
-                    context: {
-                      type: 'string',
-                      description: 'Context or page reference for the field calculation. Specifies the data context in which the field calculation should be performed.'
-                    }
-                  },
-                  required: ['name', 'context'],
-                  additionalProperties: false
-                }
-              },
-              whens: {
-                type: 'array',
-                description: 'Array of when condition objects to recalculate. Each when object must contain name and context properties.',
-                items: {
-                  type: 'object',
-                  properties: {
-                    name: {
-                      type: 'string',
-                      description: 'Name of the when condition to recalculate. a valid when rule reference accessible within the assignment action context.'
-                    },
-                    context: {
-                      type: 'string',
-                      description: 'Context or page reference for the when condition evaluation. Specifies the data context in which the when condition should be evaluated.'
-                    }
-                  },
-                  required: ['name', 'context'],
-                  additionalProperties: false
-                }
-              }
-            },
-            additionalProperties: false
-          },
-          content: {
-            type: 'object',
-            description: 'Optional map of scalar properties and embedded page properties to be merged into the case during the recalculation process. Field values provided here will be available for use in calculations. Only fields that are present in the assignment action\'s view can be effectively utilized in calculations.'
-          },
-          pageInstructions: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                instruction: {
-                  type: 'string',
-                  enum: ['UPDATE', 'REPLACE', 'DELETE', 'APPEND', 'INSERT', 'MOVE'],
-                  description: 'Page instruction type. UPDATE (add fields to page), REPLACE (replace entire page), DELETE (remove page), APPEND (add item to page list), INSERT (insert item in page list), MOVE (reorder page list items)'
-                },
-                target: {
-                  type: 'string',
-                  description: 'Target embedded page name'
-                },
-                content: {
-                  type: 'object',
-                  description: 'Content to set on the embedded page (required for UPDATE and REPLACE)'
-                }
-              },
-              required: ['instruction', 'target'],
-              description: 'Page operation for embedded pages. Use REPLACE instruction to set embedded page references with full object including pzInsKey. Example: {"instruction": "REPLACE", "target": "PageName", "content": {"Property": "value", "pyID": "ID-123", "pzInsKey": "CLASS-NAME ID-123"}}'
-            },
-            description: 'Optional list of page-related operations for embedded pages, page lists, or page groups. Required for setting embedded page references. Only pages included in the assignment\'s view can be modified.'
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['assignmentID', 'actionID', 'calculations']
-      }
+      inputSchema: z.object({
+        assignmentID: z.string().describe('Assignment ID. Format: ASSIGN-WORKLIST {caseID}!{processID}. Example: "ASSIGN-WORKLIST MYORG-APP-WORK C-1001!PROCESS"'),
+        actionID: z.string().describe('Action ID from assignment (Example: "pyApproval", "Submit"). CRITICAL: Action IDs are CASE-SENSITIVE and have no spaces even if display names do ("Complete Review" → "CompleteReview"). Use get_assignment to find correct ID from actions array - use "ID" field not "name" field.'),
+        eTag: z.string().optional().describe('Optional. Auto-fetched if omitted. For faster execution, use eTag from previous response.'),
+        calculations: z.object({
+          fields: z.array(z.object({
+            name: z.string().describe('Name of the field to recalculate. a valid property reference within the assignment action view.'),
+            context: z.string().describe('Context or page reference for the field calculation. Specifies the data context in which the field calculation should be performed.')
+          })).optional().describe('Array of field objects to recalculate. Each field object must contain name and context properties.'),
+          whens: z.array(z.object({
+            name: z.string().describe('Name of the when condition to recalculate. a valid when rule reference accessible within the assignment action context.'),
+            context: z.string().describe('Context or page reference for the when condition evaluation. Specifies the data context in which the when condition should be evaluated.')
+          })).optional().describe('Array of when condition objects to recalculate. Each when object must contain name and context properties.')
+        }).describe('Required object containing fields and when conditions to recalculate. Must contain at least one of fields or whens arrays.'),
+        content: z.looseObject({}).optional().describe('Optional map of scalar properties and embedded page properties to be merged into the case during the recalculation process. Field values provided here will be available for use in calculations. Only fields that are present in the assignment action\'s view can be effectively utilized in calculations.'),
+        pageInstructions: z.array(z.object({
+          instruction: z.enum(['UPDATE', 'REPLACE', 'DELETE', 'APPEND', 'INSERT', 'MOVE']).describe('Page instruction type. UPDATE (add fields to page), REPLACE (replace entire page), DELETE (remove page), APPEND (add item to page list), INSERT (insert item in page list), MOVE (reorder page list items)'),
+          target: z.string().describe('Target embedded page name'),
+          content: z.looseObject({}).optional().describe('Content to set on the embedded page (required for UPDATE and REPLACE)')
+        }).describe('Page operation for embedded pages. Use REPLACE instruction to set embedded page references with full object including pzInsKey. Example: {"instruction": "REPLACE", "target": "PageName", "content": {"Property": "value", "pyID": "ID-123", "pzInsKey": "CLASS-NAME ID-123"}}')).optional().describe('Optional list of page-related operations for embedded pages, page lists, or page groups. Required for setting embedded page references. Only pages included in the assignment\'s view can be modified.'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 
@@ -284,6 +215,7 @@ export class RecalculateAssignmentFieldsTool extends BaseTool {
     }
   }
 
+
   /**
    * Format successful response for display
    */
@@ -302,7 +234,7 @@ export class RecalculateAssignmentFieldsTool extends BaseTool {
     response += `**Assignment ID**: ${assignmentID}\n`;
     response += `**Action ID**: ${actionID}\n`;
     response += `**eTag Used**: ${eTag}\n\n`;
-    
+
     // Display calculation request summary
     response += '### Calculation Request Summary\n';
     if (calculations.fields && calculations.fields.length > 0) {
@@ -339,7 +271,7 @@ export class RecalculateAssignmentFieldsTool extends BaseTool {
             response += `   - Assignment ID: ${assignment.ID}\n`;
             response += `   - Process: ${assignment.processName || assignment.processID || 'N/A'}\n`;
             response += `   - Assigned To: ${assignment.assigneeInfo?.name || assignment.assigneeInfo?.ID || 'N/A'}\n`;
-            
+
             // Show actions for this assignment
             if (assignment.actions && assignment.actions.length > 0) {
               response += `   - Available Actions: ${assignment.actions.map(action => action.name || action.ID).join(', ')}\n`;
@@ -362,7 +294,7 @@ export class RecalculateAssignmentFieldsTool extends BaseTool {
       if (data.data.calculationResults) {
         response += '\n### Field Calculation Results\n';
         const calcResults = data.data.calculationResults;
-        
+
         if (calcResults.fields && calcResults.fields.length > 0) {
           response += '**Calculated Fields:**\n';
           calcResults.fields.forEach((field, index) => {
@@ -428,14 +360,14 @@ export class RecalculateAssignmentFieldsTool extends BaseTool {
     if (data.uiResources) {
       response += '\n### UI Resources Updated\n';
       response += '- **Form Metadata**: UI resources refreshed with recalculated field values and states\n';
-      
+
       if (data.uiResources.root) {
         response += `- **Root Component**: ${data.uiResources.root.type || 'Form'}\n`;
         if (data.uiResources.root.config?.name) {
           response += `- **View Name**: ${data.uiResources.root.config.name}\n`;
         }
       }
-      
+
       if (data.uiResources.resources) {
         // Display updated fields
         if (data.uiResources.resources.fields) {
@@ -449,7 +381,7 @@ export class RecalculateAssignmentFieldsTool extends BaseTool {
             }
           }
         }
-        
+
         // Display calculated field states
         if (data.uiResources.resources.calculatedFields) {
           const calcFieldCount = Object.keys(data.uiResources.resources.calculatedFields).length;
@@ -496,23 +428,23 @@ export class RecalculateAssignmentFieldsTool extends BaseTool {
     response += '1. ✅ Assignment and action validated\n';
     response += '2. ✅ eTag verified for optimistic locking\n';
     response += '3. ✅ Case opened from database\n';
-    
+
     if (content && Object.keys(content).length > 0) {
       response += '4. ✅ User content merged into case\n';
     }
-    
+
     if (pageInstructions && pageInstructions.length > 0) {
       response += '5. ✅ Page instructions applied\n';
     }
-    
+
     if (calculations.fields && calculations.fields.length > 0) {
       response += `6. ✅ Field calculations executed: ${calculations.fields.length} fields\n`;
     }
-    
+
     if (calculations.whens && calculations.whens.length > 0) {
       response += `7. ✅ When conditions evaluated: ${calculations.whens.length} conditions\n`;
     }
-    
+
     response += '8. ✅ UI field states updated\n';
     response += '9. ✅ Form metadata refreshed\n';
 
@@ -542,19 +474,19 @@ export class RecalculateAssignmentFieldsTool extends BaseTool {
    */
   formatErrorResponse(assignmentID, actionID, error, options) {
     const { eTag, calculations, content, pageInstructions } = options;
-    
+
     let response = `## Error recalculating assignment fields: ${actionID}\n\n`;
-    
+
     response += `**Assignment ID**: ${assignmentID}\n`;
     response += `**Action ID**: ${actionID}\n`;
     response += `**eTag Used**: ${eTag}\n`;
     response += `**Error Type**: ${error.type}\n`;
     response += `**Message**: ${error.message}\n`;
-    
+
     if (error.details) {
       response += `**Details**: ${error.details}\n`;
     }
-    
+
     if (error.status) {
       response += `**HTTP Status**: ${error.status} ${error.statusText}\n`;
     }

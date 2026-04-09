@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,17 +17,10 @@ export class GetCaseAncestorsTool extends BaseTool {
     return {
       name: 'get_case_ancestors',
       description: 'Get ancestor case hierarchy for a specific case. Retrieves ancestor hierarchy case list for the case ID passed in, showing the parent-child relationships up the case hierarchy chain. Each ancestor includes basic case information (ID, name) and HATEOAS navigation links.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          caseID: {
-            type: 'string',
-            description: 'Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces."OSIEO3-DOCSAPP-WORK T-561003". a complete case identifier including spaces and special characters. The case must exist and be accessible to the current user.'
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['caseID']
-      }
+      inputSchema: z.object({
+        caseID: z.string().describe('Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces."OSIEO3-DOCSAPP-WORK T-561003". a complete case identifier including spaces and special characters. The case must exist and be accessible to the current user.'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

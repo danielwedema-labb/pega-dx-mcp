@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 import fs from 'fs';
@@ -19,37 +20,15 @@ export class UploadAttachmentTool extends BaseTool {
     return {
       name: 'upload_attachment',
       description: 'Upload a file to Pega as a temporary attachment that can later be linked to cases. Creates a temporary attachment instance that auto-expires after 2 hours if not linked. Supports multiple input methods for cross-client compatibility.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          filePath: {
-            type: 'string',
-            description: 'Path to file on local filesystem (preferred for desktop clients like Cline). Example: "/home/user/document.pdf" or "C:\\Users\\user\\file.txt"'
-          },
-          fileContent: {
-            type: 'string',
-            description: 'Base64-encoded file content (for web clients or when file system access is restricted). Use this when filePath is not available.'
-          },
-          fileUrl: {
-            type: 'string',
-            description: 'URL to file that can be fetched (http://, https://, file://, data:// schemes). Alternative when direct file access is not possible.'
-          },
-          fileName: {
-            type: 'string',
-            description: 'Original filename with extension (required when using fileContent or fileUrl). Example: "report.pdf", "image.jpg"'
-          },
-          mimeType: {
-            type: 'string',
-            description: 'MIME type override (auto-detected from filename/content if not provided). Example: "application/pdf", "image/jpeg"'
-          },
-          appendUniqueIdToFileName: {
-            type: 'boolean',
-            description: 'Whether to append a unique identifier to the filename to prevent naming conflicts. Pega will add timestamp-based unique ID to filename.',
-            default: true
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        }
-      }
+      inputSchema: z.object({
+        filePath: z.string().optional().describe('Path to file on local filesystem (preferred for desktop clients like Cline). Example: "/home/user/document.pdf" or "C:\\Users\\user\\file.txt"'),
+        fileContent: z.string().optional().describe('Base64-encoded file content (for web clients or when file system access is restricted). Use this when filePath is not available.'),
+        fileUrl: z.string().optional().describe('URL to file that can be fetched (http://, https://, file://, data:// schemes). Alternative when direct file access is not possible.'),
+        fileName: z.string().optional().describe('Original filename with extension (required when using fileContent or fileUrl). Example: "report.pdf", "image.jpg"'),
+        mimeType: z.string().optional().describe('MIME type override (auto-detected from filename/content if not provided). Example: "application/pdf", "image/jpeg"'),
+        appendUniqueIdToFileName: z.boolean().optional().describe('Whether to append a unique identifier to the filename to prevent naming conflicts. Pega will add timestamp-based unique ID to filename.'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

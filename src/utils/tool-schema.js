@@ -1,81 +1,23 @@
+import { z } from 'zod';
+
 /**
  * Tool schema utilities for consistent session credential parameter definitions
  * Provides standardized schema generation for MCP tools
  */
 
 /**
- * Generate session credentials parameter schema
- * @returns {Object} Session credentials parameter schema
+ * Generate session credentials parameter schema as a Zod v4 schema
+ * @returns {z.ZodObject} Session credentials Zod schema
  */
 export function getSessionCredentialsSchema() {
-  return {
-    type: 'object',
-    description: 'Optional session-specific credentials. If not provided, uses environment variables. Supports two authentication modes: (1) OAuth mode - provide baseUrl, clientId, and clientSecret, or (2) Token mode - provide baseUrl and accessToken.',
-    properties: {
-      sessionId: {
-        type: 'string',
-        description: 'Optional session ID. If not provided, a new session will be created.'
-      },
-      baseUrl: {
-        type: 'string',
-        description: 'Pega base URL (required if providing credentials)'
-      },
-      apiVersion: {
-        type: 'string',
-        description: 'API version (optional, defaults to v2)',
-        default: 'v2'
-      },
-      clientId: {
-        type: 'string',
-        description: 'OAuth2 client ID (required for OAuth mode)'
-      },
-      clientSecret: {
-        type: 'string',
-        description: 'OAuth2 client secret (required for OAuth mode)'
-      },
-      accessToken: {
-        type: 'string',
-        description: 'Direct access token (required for token mode)'
-      },
-      tokenExpiry: {
-        type: 'number',
-        description: 'Token expiry in seconds from now (optional for token mode)'
-      }
-    }
-  };
+  return z.object({
+    sessionId:    z.string().optional().describe('Optional session ID. If not provided, a new session will be created.'),
+    baseUrl:      z.string().optional().describe('Pega base URL (required if providing credentials)'),
+    apiVersion:   z.string().optional().describe('API version (optional, defaults to v2)'),
+    clientId:     z.string().optional().describe('OAuth2 client ID (required for OAuth mode)'),
+    clientSecret: z.string().optional().describe('OAuth2 client secret (required for OAuth mode)'),
+    accessToken:  z.string().optional().describe('Direct access token (required for token mode)'),
+    tokenExpiry:  z.number().optional().describe('Token expiry in seconds from now (optional for token mode)')
+  }).describe('Optional session-specific credentials. If not provided, uses environment variables. Supports two authentication modes: (1) OAuth mode - provide baseUrl, clientId, and clientSecret, or (2) Token mode - provide baseUrl and accessToken.');
 }
 
-/**
- * Add session credentials parameter to existing tool schema
- * @param {Object} existingSchema - Existing tool input schema
- * @returns {Object} Updated schema with session credentials parameter
- */
-export function addSessionCredentialsToSchema(existingSchema) {
-  // Make a deep copy of the existing schema
-  const updatedSchema = JSON.parse(JSON.stringify(existingSchema));
-
-  // Add sessionCredentials to properties
-  if (!updatedSchema.properties) {
-    updatedSchema.properties = {};
-  }
-
-  updatedSchema.properties.sessionCredentials = getSessionCredentialsSchema();
-
-  return updatedSchema;
-}
-
-/**
- * Create a complete tool schema with session credentials support
- * @param {Object} baseSchema - Base schema without session credentials
- * @returns {Object} Complete schema with session credentials
- */
-export function createToolSchema(baseSchema) {
-  return {
-    type: 'object',
-    properties: {
-      ...baseSchema.properties,
-      sessionCredentials: getSessionCredentialsSchema()
-    },
-    required: baseSchema.required || []
-  };
-}

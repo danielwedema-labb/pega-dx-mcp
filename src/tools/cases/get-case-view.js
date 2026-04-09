@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,21 +17,11 @@ export class GetCaseViewTool extends BaseTool {
     return {
       name: 'get_case_view',
       description: 'Get view details based on case ID and view name. Returns view metadata with customizable logic from pyUpgradeOnOpen Data Transform.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          caseID: {
-            type: 'string',
-            description: 'Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces.'
-          },
-          viewID: {
-            type: 'string',
-            description: 'Name of the view to retrieve'
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['caseID', 'viewID']
-      }
+      inputSchema: z.object({
+        caseID: z.string().describe('Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces.'),
+        viewID: z.string().describe('Name of the view to retrieve'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,32 +17,13 @@ export class AddCaseFollowersTool extends BaseTool {
     return {
       name: 'add_case_followers',
       description: 'Add multiple followers to a work object. Allows users to follow a case to receive notifications and updates about case progress.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          caseID: {
-            type: 'string',
-            description: 'Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces."OSIEO3-DOCSAPP-WORK T-561003". a complete case identifier including spaces and special characters.'
-          },
-          users: {
-            type: 'array',
-            description: 'Array of user objects to add as followers to the case. Each user object should contain user identification information.',
-            items: {
-              type: 'object',
-              properties: {
-                ID: {
-                  type: 'string',
-                  description: 'User identifier of the person to add as a follower. This is the unique identifier for the user in the Pega system.'
-                }
-              },
-              required: ['ID']
-            },
-            minItems: 1
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['caseID', 'users']
-      }
+      inputSchema: z.object({
+        caseID: z.string().describe('Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces."OSIEO3-DOCSAPP-WORK T-561003". a complete case identifier including spaces and special characters.'),
+        users: z.array(z.object({
+          ID: z.string().describe('User identifier of the person to add as a follower. This is the unique identifier for the user in the Pega system.')
+        })).min(1).describe('Array of user objects to add as followers to the case. Each user object should contain user identification information.'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

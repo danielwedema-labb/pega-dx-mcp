@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,60 +17,19 @@ export class UpdateCaseTool extends BaseTool {
     return {
       name: 'update_case',
       description: 'Update a Pega case by directly modifying case properties. V1 EXCLUSIVE - only available in Traditional DX API. V2 uses perform_case_action instead. If eTag is not provided, automatically fetches the latest eTag from the case for seamless operation. Performs case-wide or stage-wide local action (defaults to pyUpdateCaseDetails if actionID not specified).',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          caseID: {
-            type: 'string',
-            description: 'Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces.'
-          },
-          content: {
-            type: 'object',
-            description: 'Map of case properties to update. Only valid case properties can be set. Example: {"Status": "Approved", "Priority": "High"}. Empty object is valid for action-only updates.'
-          },
-          actionID: {
-            type: 'string',
-            description: 'Action ID to perform. Default: pyUpdateCaseDetails. Example: "ApproveCase"'
-          },
-          eTag: {
-            type: 'string',
-            description: 'Optional. Auto-fetched if omitted. For faster execution, use eTag from previous response.'
-          },
-          pageInstructions: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                instruction: {
-                  type: 'string',
-                  enum: ['UPDATE', 'REPLACE', 'DELETE', 'APPEND', 'INSERT', 'MOVE'],
-                  description: 'Page instruction type. UPDATE (add fields to page), REPLACE (replace entire page), DELETE (remove page), APPEND (add item to page list), INSERT (insert item in page list), MOVE (reorder page list items)'
-                },
-                target: {
-                  type: 'string',
-                  description: 'Target embedded page name'
-                },
-                content: {
-                  type: 'object',
-                  description: 'Content to set on the embedded page (required for UPDATE and REPLACE)'
-                }
-              },
-              required: ['instruction', 'target'],
-              description: 'Page operation for embedded pages. Use REPLACE instruction to set embedded page references with full object including pzInsKey. Example: {"instruction": "REPLACE", "target": "PageName", "content": {"Property": "value", "pyID": "ID-123", "pzInsKey": "CLASS-NAME ID-123"}}'
-            },
-            description: 'Optional list of page-related operations for embedded pages, page lists, or page groups. Required for setting embedded page references.'
-          },
-          attachments: {
-            type: 'array',
-            description: 'Optional list of attachments to add to the case during update.',
-            items: {
-              type: 'object'
-            }
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['caseID', 'content']
-      }
+      inputSchema: z.object({
+        caseID: z.string().describe('Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces.'),
+        content: z.looseObject({}).describe('Map of case properties to update. Only valid case properties can be set. Example: {"Status": "Approved", "Priority": "High"}. Empty object is valid for action-only updates.'),
+        actionID: z.string().optional().describe('Action ID to perform. Default: pyUpdateCaseDetails. Example: "ApproveCase"'),
+        eTag: z.string().optional().describe('Optional. Auto-fetched if omitted. For faster execution, use eTag from previous response.'),
+        pageInstructions: z.array(z.object({
+          instruction: z.enum(['UPDATE', 'REPLACE', 'DELETE', 'APPEND', 'INSERT', 'MOVE']).describe('Page instruction type. UPDATE (add fields to page), REPLACE (replace entire page), DELETE (remove page), APPEND (add item to page list), INSERT (insert item in page list), MOVE (reorder page list items)'),
+          target: z.string().describe('Target embedded page name'),
+          content: z.looseObject({}).optional().describe('Content to set on the embedded page (required for UPDATE and REPLACE)')
+        }).describe('Page operation for embedded pages. Use REPLACE instruction to set embedded page references with full object including pzInsKey. Example: {"instruction": "REPLACE", "target": "PageName", "content": {"Property": "value", "pyID": "ID-123", "pzInsKey": "CLASS-NAME ID-123"}}')).optional().describe('Optional list of page-related operations for embedded pages, page lists, or page groups. Required for setting embedded page references.'),
+        attachments: z.array(z.looseObject({})).optional().describe('Optional list of attachments to add to the case during update.'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

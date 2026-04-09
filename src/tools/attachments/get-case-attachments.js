@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,22 +17,11 @@ export class GetCaseAttachmentsTool extends BaseTool {
     return {
       name: 'get_case_attachments',
       description: 'Get a comprehensive list of all attachments associated with a specific Pega case. Retrieves attachment metadata including file details, URLs, creation information, and available actions (download, edit, delete) for each attachment. Only attachments from categories selected in the Attachment Category rule are returned. Supports optional thumbnail retrieval for image attachments (gif, jpg, jpeg, png, and others) as base64 encoded strings.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          caseID: {
-            type: 'string',
-            description: 'Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces.'
-          },
-          includeThumbnails: {
-            type: 'boolean',
-            description: 'Whether to include thumbnails as base64 strings. For images: gif, jpg, jpeg, png. Default: false',
-            default: false
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['caseID']
-      }
+      inputSchema: z.object({
+        caseID: z.string().describe('Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces.'),
+        includeThumbnails: z.boolean().optional().describe('Whether to include thumbnails as base64 strings. For images: gif, jpg, jpeg, png. Default: false'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

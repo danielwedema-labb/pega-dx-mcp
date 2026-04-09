@@ -572,53 +572,12 @@ export class PegaV2Client extends BaseApiClient {
       requestBody.attachments = attachments;
     }
 
-    try {
-      // Get OAuth2 token
-      const token = await this.oauth2Client.getAccessToken();
-      
-      // Prepare headers
-      const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'x-origin-channel': 'Web'
-      };
-
-      // Make PATCH request
-      const response = await fetch(url, {
-        method: 'PATCH',
-        headers,
-        body: JSON.stringify(requestBody),
-        timeout: config.pega.requestTimeout || 30000
-      });
-
-      // Handle non-2xx responses with specific error handling for bulk operations
-      if (!response.ok) {
-        return await this.handleBulkCasesErrorResponse(response);
-      }
-
-      // Parse successful response
-      const data = await response.json();
-      
-      return {
-        success: true,
-        data,
-        status: response.status,
-        statusText: response.statusText
-      };
-
-    } catch (error) {
-      // Handle network and other errors
-      return {
-        success: false,
-        error: {
-          type: 'CONNECTION_ERROR',
-          message: 'Failed to connect to Pega API for bulk cases operation',
-          details: error.message,
-          originalError: error
-        }
-      };
-    }
+    return await this.makeRequest(url, {
+      method: 'PATCH',
+      headers: { 'x-origin-channel': 'Web' },
+      body: JSON.stringify(requestBody),
+      errorHandler: this.handleBulkCasesErrorResponse.bind(this)
+    });
   }
 
   /**
@@ -921,58 +880,21 @@ export class PegaV2Client extends BaseApiClient {
     const encodedAttachmentID = encodeURIComponent(attachmentID);
     const url = `${this.getApiBaseUrl()}/attachments/${encodedAttachmentID}`;
 
-    try {
-      // Get OAuth2 token
-      const token = await this.oauth2Client.getAccessToken();
-      
-      // Prepare headers
-      const headers = {
-        'Authorization': `Bearer ${token}`,
+    const result = await this.makeRequest(url, {
+      method: 'GET',
+      headers: {
         'Accept': '*/*', // Accept any content type since we get different types (base64, URL, HTML)
         'x-origin-channel': 'Web'
-      };
+      },
+      errorHandler: this.handleAttachmentContentErrorResponse.bind(this)
+    });
 
-      // Make request
-      const response = await fetch(url, {
-        method: 'GET',
-        headers,
-        timeout: config.pega.requestTimeout || 30000
-      });
-
-      // Handle non-2xx responses
-      if (!response.ok) {
-        return await this.handleAttachmentContentErrorResponse(response);
-      }
-
-      // Get response headers for content type detection
-      const responseHeaders = {};
-      response.headers.forEach((value, key) => {
-        responseHeaders[key] = value;
-      });
-
-      // Get content as text (works for base64, URL, and HTML)
-      const content = await response.text();
-      
-      return {
-        success: true,
-        data: content,
-        headers: responseHeaders,
-        status: response.status,
-        statusText: response.statusText
-      };
-
-    } catch (error) {
-      // Handle network and other errors
-      return {
-        success: false,
-        error: {
-          type: 'CONNECTION_ERROR',
-          message: 'Failed to retrieve attachment content from Pega API',
-          details: error.message,
-          originalError: error
-        }
-      };
+    if (result.success) {
+      // Unwrap text content from makeRequest's { message } envelope
+      result.data = result.data?.message ?? result.data;
+      result.headers = result.responseHeaders;
     }
+    return result;
   }
 
   /**
@@ -985,49 +907,11 @@ export class PegaV2Client extends BaseApiClient {
     const encodedAttachmentID = encodeURIComponent(attachmentID);
     const url = `${this.getApiBaseUrl()}/attachments/${encodedAttachmentID}`;
 
-    try {
-      // Get OAuth2 token
-      const token = await this.oauth2Client.getAccessToken();
-      
-      // Prepare headers
-      const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json',
-        'x-origin-channel': 'Web'
-      };
-
-      // Make DELETE request
-      const response = await fetch(url, {
-        method: 'DELETE',
-        headers,
-        timeout: config.pega.requestTimeout || 30000
-      });
-
-      // Handle non-2xx responses
-      if (!response.ok) {
-        return await this.handleAttachmentDeleteErrorResponse(response);
-      }
-
-      // Successful deletion - API returns no content (200 with empty body)
-      return {
-        success: true,
-        data: {}, // Empty response body for successful deletion
-        status: response.status,
-        statusText: response.statusText
-      };
-
-    } catch (error) {
-      // Handle network and other errors
-      return {
-        success: false,
-        error: {
-          type: 'CONNECTION_ERROR',
-          message: 'Failed to delete attachment from Pega API',
-          details: error.message,
-          originalError: error
-        }
-      };
-    }
+    return await this.makeRequest(url, {
+      method: 'DELETE',
+      headers: { 'x-origin-channel': 'Web' },
+      errorHandler: this.handleAttachmentDeleteErrorResponse.bind(this)
+    });
   }
 
   /**
@@ -1045,59 +929,14 @@ export class PegaV2Client extends BaseApiClient {
     const encodedAttachmentID = encodeURIComponent(attachmentID);
     const url = `${this.getApiBaseUrl()}/attachments/${encodedAttachmentID}`;
 
-    try {
-      // Get OAuth2 token
-      const token = await this.oauth2Client.getAccessToken();
-      
-      // Prepare headers
-      const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'x-origin-channel': 'Web'
-      };
+    const requestBody = { name, category };
 
-      // Build request body
-      const requestBody = {
-        name,
-        category
-      };
-
-      // Make PATCH request
-      const response = await fetch(url, {
-        method: 'PATCH',
-        headers,
-        body: JSON.stringify(requestBody),
-        timeout: config.pega.requestTimeout || 30000
-      });
-
-      // Handle non-2xx responses
-      if (!response.ok) {
-        return await this.handleAttachmentUpdateErrorResponse(response);
-      }
-
-      // Successful update - API returns success message
-      const responseText = await response.text();
-      
-      return {
-        success: true,
-        data: { message: responseText }, // Wrap the success message
-        status: response.status,
-        statusText: response.statusText
-      };
-
-    } catch (error) {
-      // Handle network and other errors
-      return {
-        success: false,
-        error: {
-          type: 'CONNECTION_ERROR',
-          message: 'Failed to update attachment in Pega API',
-          details: error.message,
-          originalError: error
-        }
-      };
-    }
+    return await this.makeRequest(url, {
+      method: 'PATCH',
+      headers: { 'x-origin-channel': 'Web' },
+      body: JSON.stringify(requestBody),
+      errorHandler: this.handleAttachmentUpdateErrorResponse.bind(this)
+    });
   }
 
   /**
@@ -1112,67 +951,28 @@ export class PegaV2Client extends BaseApiClient {
   async uploadAttachment(fileBuffer, options = {}) {
     const { fileName, mimeType, appendUniqueIdToFileName = true } = options;
     
-    try {
-      // Create web standard FormData for use with fetch()
-      const formData = new globalThis.FormData();
-      
-      // Add form fields as specified in Pega API documentation
-      formData.append('appendUniqueIdToFileName', appendUniqueIdToFileName.toString());
-      
-      // Create a Blob from the buffer for web standard FormData
-      const fileBlob = new Blob([fileBuffer], { type: mimeType });
-      formData.append('file', fileBlob, fileName);
+    // Create web standard FormData for use with fetch()
+    const formData = new globalThis.FormData();
 
-      const url = `${this.getApiBaseUrl()}/attachments/upload`;
+    // Add form fields as specified in Pega API documentation
+    formData.append('appendUniqueIdToFileName', appendUniqueIdToFileName.toString());
 
-      // Get OAuth2 token
-      const token = await this.oauth2Client.getAccessToken();
-      
-      // Prepare headers for multipart form data
-      // Note: Do not set Content-Type header manually - FormData will set it with boundary
-      const headers = {
-        'Authorization': `Bearer ${token}`,
+    // Create a Blob from the buffer for web standard FormData
+    const fileBlob = new Blob([fileBuffer], { type: mimeType });
+    formData.append('file', fileBlob, fileName);
+
+    const url = `${this.getApiBaseUrl()}/attachments/upload`;
+
+    // body is FormData — makeRequest will skip Content-Type so fetch sets it with boundary
+    return await this.makeRequest(url, {
+      method: 'POST',
+      headers: {
         'Accept': 'application/json',
         'x-origin-channel': 'Web'
-        // Do NOT add formData.getHeaders() - web FormData doesn't have this method
-        // and fetch() will set the correct Content-Type with boundary automatically
-      };
-
-      // Make the multipart form data request
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: headers,
-        body: formData,
-        timeout: this.config.pega.requestTimeout || 30000
-      });
-
-      // Handle non-2xx responses
-      if (!response.ok) {
-        return await this.handleAttachmentErrorResponse(response);
-      }
-
-      // Parse successful response
-      const data = await response.json();
-      
-      return {
-        success: true,
-        data,
-        status: response.status,
-        statusText: response.statusText
-      };
-
-    } catch (error) {
-      // Handle network and other errors
-      return {
-        success: false,
-        error: {
-          type: 'CONNECTION_ERROR',
-          message: 'Failed to upload attachment to Pega API',
-          details: error.message,
-          originalError: error
-        }
-      };
-    }
+      },
+      body: formData,
+      errorHandler: this.handleAttachmentErrorResponse.bind(this)
+    });
   }
 
   /**
@@ -1523,58 +1323,21 @@ export class PegaV2Client extends BaseApiClient {
     const encodedDocumentID = encodeURIComponent(documentID);
     const url = `${this.getApiBaseUrl()}/documents/${encodedDocumentID}`;
 
-    try {
-      // Get OAuth2 token
-      const token = await this.oauth2Client.getAccessToken();
-      
-      // Prepare headers
-      const headers = {
-        'Authorization': `Bearer ${token}`,
+    const result = await this.makeRequest(url, {
+      method: 'GET',
+      headers: {
         'Accept': 'text/plain', // Document API returns base64 content as text/plain
         'x-origin-channel': 'Web'
-      };
+      },
+      errorHandler: this.handleDocumentErrorResponse.bind(this)
+    });
 
-      // Make request
-      const response = await fetch(url, {
-        method: 'GET',
-        headers,
-        timeout: config.pega.requestTimeout || 30000
-      });
-
-      // Handle non-2xx responses
-      if (!response.ok) {
-        return await this.handleDocumentErrorResponse(response);
-      }
-
-      // Get response headers for content metadata
-      const responseHeaders = {};
-      response.headers.forEach((value, key) => {
-        responseHeaders[key] = value;
-      });
-
-      // Get content as text (base64 encoded)
-      const content = await response.text();
-      
-      return {
-        success: true,
-        data: content,
-        headers: responseHeaders,
-        status: response.status,
-        statusText: response.statusText
-      };
-
-    } catch (error) {
-      // Handle network and other errors
-      return {
-        success: false,
-        error: {
-          type: 'CONNECTION_ERROR',
-          message: 'Failed to retrieve document content from Pega API',
-          details: error.message,
-          originalError: error
-        }
-      };
+    if (result.success) {
+      // Unwrap text content from makeRequest's { message } envelope
+      result.data = result.data?.message ?? result.data;
+      result.headers = result.responseHeaders;
     }
+    return result;
   }
 
   /**
@@ -1589,56 +1352,16 @@ export class PegaV2Client extends BaseApiClient {
     const encodedDocumentID = encodeURIComponent(documentID);
     const url = `${this.getApiBaseUrl()}/cases/${encodedCaseID}/documents/${encodedDocumentID}`;
 
-    try {
-      // Get OAuth2 token
-      const token = await this.oauth2Client.getAccessToken();
-      
-      // Prepare headers
-      const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json',
-        'x-origin-channel': 'Web'
-      };
+    const result = await this.makeRequest(url, {
+      method: 'DELETE',
+      headers: { 'x-origin-channel': 'Web' },
+      errorHandler: this.handleRemoveCaseDocumentErrorResponse.bind(this)
+    });
 
-      // Make DELETE request
-      const response = await fetch(url, {
-        method: 'DELETE',
-        headers,
-        timeout: config.pega.requestTimeout || 30000
-      });
-
-      // Handle non-2xx responses
-      if (!response.ok) {
-        return await this.handleRemoveCaseDocumentErrorResponse(response);
-      }
-
-      // Get response headers (especially cache-control)
-      const responseHeaders = {};
-      response.headers.forEach((value, key) => {
-        responseHeaders[key] = value;
-      });
-
-      // Successful deletion - API returns 200 with cache-control header
-      return {
-        success: true,
-        data: {}, // Empty response body for successful deletion
-        headers: responseHeaders,
-        status: response.status,
-        statusText: response.statusText
-      };
-
-    } catch (error) {
-      // Handle network and other errors
-      return {
-        success: false,
-        error: {
-          type: 'CONNECTION_ERROR',
-          message: 'Failed to remove document from case via Pega API',
-          details: error.message,
-          originalError: error
-        }
-      };
+    if (result.success) {
+      result.headers = result.responseHeaders;
     }
+    return result;
   }
 
   /**
@@ -1696,56 +1419,16 @@ export class PegaV2Client extends BaseApiClient {
     const encodedFollowerID = encodeURIComponent(followerID);
     const url = `${this.getApiBaseUrl()}/cases/${encodedCaseID}/followers/${encodedFollowerID}`;
 
-    try {
-      // Get OAuth2 token
-      const token = await this.oauth2Client.getAccessToken();
-      
-      // Prepare headers
-      const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json',
-        'x-origin-channel': 'Web'
-      };
+    const result = await this.makeRequest(url, {
+      method: 'DELETE',
+      headers: { 'x-origin-channel': 'Web' },
+      errorHandler: this.handleFollowerDeleteErrorResponse.bind(this)
+    });
 
-      // Make DELETE request
-      const response = await fetch(url, {
-        method: 'DELETE',
-        headers,
-        timeout: config.pega.requestTimeout || 30000
-      });
-
-      // Handle non-2xx responses
-      if (!response.ok) {
-        return await this.handleFollowerDeleteErrorResponse(response);
-      }
-
-      // Get response headers (especially cache-control)
-      const responseHeaders = {};
-      response.headers.forEach((value, key) => {
-        responseHeaders[key] = value;
-      });
-
-      // Successful deletion - API returns 200 with cache-control header
-      return {
-        success: true,
-        data: {}, // Empty response body for successful deletion
-        headers: responseHeaders,
-        status: response.status,
-        statusText: response.statusText
-      };
-
-    } catch (error) {
-      // Handle network and other errors
-      return {
-        success: false,
-        error: {
-          type: 'CONNECTION_ERROR',
-          message: 'Failed to delete follower from case via Pega API',
-          details: error.message,
-          originalError: error
-        }
-      };
+    if (result.success) {
+      result.headers = result.responseHeaders;
     }
+    return result;
   }
 
   /**
@@ -1917,58 +1600,19 @@ export class PegaV2Client extends BaseApiClient {
     const encodedParticipantID = encodeURIComponent(participantID);
     const url = `${this.getApiBaseUrl()}/cases/${encodedCaseID}/participants/${encodedParticipantID}`;
 
-    try {
-      // Get OAuth2 token
-      const token = await this.oauth2Client.getAccessToken();
-      
-      // Prepare headers
-      const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json',
+    const result = await this.makeRequest(url, {
+      method: 'DELETE',
+      headers: {
         'if-match': eTag, // Required eTag header for optimistic locking
         'x-origin-channel': 'Web'
-      };
+      },
+      errorHandler: this.handleParticipantDeleteErrorResponse.bind(this)
+    });
 
-      // Make DELETE request
-      const response = await fetch(url, {
-        method: 'DELETE',
-        headers,
-        timeout: config.pega.requestTimeout || 30000
-      });
-
-      // Handle non-2xx responses
-      if (!response.ok) {
-        return await this.handleParticipantDeleteErrorResponse(response);
-      }
-
-      // Get response headers (especially etag)
-      const responseHeaders = {};
-      response.headers.forEach((value, key) => {
-        responseHeaders[key] = value;
-      });
-
-      // Successful deletion - API returns 200 with etag header
-      return {
-        success: true,
-        data: {}, // Empty response body for successful deletion
-        headers: responseHeaders,
-        eTag: response.headers.get('etag'), // Capture new eTag
-        status: response.status,
-        statusText: response.statusText
-      };
-
-    } catch (error) {
-      // Handle network and other errors
-      return {
-        success: false,
-        error: {
-          type: 'CONNECTION_ERROR',
-          message: 'Failed to delete participant from case via Pega API',
-          details: error.message,
-          originalError: error
-        }
-      };
+    if (result.success) {
+      result.headers = result.responseHeaders;
     }
+    return result;
   }
 
   /**
@@ -2080,58 +1724,16 @@ export class PegaV2Client extends BaseApiClient {
     const encodedTagID = encodeURIComponent(tagID);
     const url = `${this.getApiBaseUrl()}/cases/${encodedCaseID}/tags/${encodedTagID}`;
 
-    try {
-      // Get OAuth2 token
-      const token = await this.oauth2Client.getAccessToken();
-      
-      // Prepare headers
-      const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json',
-        'x-origin-channel': 'Web'
-      };
+    const result = await this.makeRequest(url, {
+      method: 'DELETE',
+      headers: { 'x-origin-channel': 'Web' },
+      errorHandler: this.handleTagDeleteErrorResponse.bind(this)
+    });
 
-      // Make DELETE request
-      const response = await fetch(url, {
-        method: 'DELETE',
-        headers,
-        timeout: config.pega.requestTimeout || 30000
-      });
-
-      // Handle non-2xx responses
-      if (!response.ok) {
-        return await this.handleTagDeleteErrorResponse(response);
-      }
-
-      // Get response headers (especially cache-control)
-      const responseHeaders = {};
-      response.headers.forEach((value, key) => {
-        responseHeaders[key] = value;
-      });
-
-      // Successful deletion - API returns 200 with string response
-      const responseText = await response.text();
-      
-      return {
-        success: true,
-        data: { message: responseText }, // Wrap the response text
-        headers: responseHeaders,
-        status: response.status,
-        statusText: response.statusText
-      };
-
-    } catch (error) {
-      // Handle network and other errors
-      return {
-        success: false,
-        error: {
-          type: 'CONNECTION_ERROR',
-          message: 'Failed to delete tag from case via Pega API',
-          details: error.message,
-          originalError: error
-        }
-      };
+    if (result.success) {
+      result.headers = result.responseHeaders;
     }
+    return result;
   }
 
   /**

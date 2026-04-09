@@ -1,5 +1,6 @@
-import { config } from '../config.js';
 import { PegaClient } from '../api/pega-client.js';
+import { config } from '../config.js';
+import { MdLogger } from '../utils/md-logger.js';
 
 /**
  * Attempt startup authentication with environment credentials
@@ -28,8 +29,8 @@ export async function attemptStartupAuthentication() {
     }
 
     // Environment credentials present - attempt authentication
-    console.error(`   🔑 Found environment credentials for ${pega.baseUrl}`);
-    console.error(`   🔄 Attempting OAuth2 authentication...`);
+    MdLogger.queueMessage(`   🔑 Found environment credentials for ${pega.baseUrl}`);
+    MdLogger.queueMessage(`   🔄 Attempting OAuth2 authentication...`);
 
     // Create PegaClient (uses environment config)
     const pegaClient = new PegaClient(null);
@@ -95,7 +96,7 @@ export async function attemptStartupAuthentication() {
 /**
  * Format authentication status for startup logs
  * @param {Object} result - Authentication result from attemptStartupAuthentication
- * @returns {string} Formatted status message for console.error
+ * @returns {string} Formatted status message for MdLogger.queueMessage
  */
 export function formatAuthStatus(result) {
   let output = '';

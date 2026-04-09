@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,34 +17,13 @@ export class RelateCasesTool extends BaseTool {
     return {
       name: 'relate_cases',
       description: 'Create relationships between cases by relating a set of case instances to a primary case',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          caseID: {
-            type: 'string',
-            description: 'Primary case ID to relate other cases to. Example: "ON6E5R-DIYRecipe-Work-RecipeCollection R-1008". a complete case identifier including spaces and special characters.'
-          },
-          cases: {
-            type: 'array',
-            description: 'Array of case objects to relate to the primary case. Each case must have an ID property.',
-            items: {
-              type: 'object',
-              properties: {
-                ID: {
-                  type: 'string',
-                  description: 'Full case handle of the case to relate. Example: "ON6E5R-DIYRecipe-Work-RecipeCollection R-1009"'
-                }
-              },
-              required: ['ID'],
-              additionalProperties: false
-            },
-            minItems: 1,
-            maxItems: 50
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['caseID', 'cases']
-      }
+      inputSchema: z.object({
+        caseID: z.string().describe('Primary case ID to relate other cases to. Example: "ON6E5R-DIYRecipe-Work-RecipeCollection R-1008". a complete case identifier including spaces and special characters.'),
+        cases: z.array(z.object({
+          ID: z.string().describe('Full case handle of the case to relate. Example: "ON6E5R-DIYRecipe-Work-RecipeCollection R-1009"')
+        })).min(1).max(50).describe('Array of case objects to relate to the primary case. Each case must have an ID property.'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,85 +17,27 @@ export class UpdateParticipantTool extends BaseTool {
     return {
       name: 'update_participant',
       description: 'Update participant details in a Pega case by case ID and participant ID. If no eTag is provided, automatically fetches the latest eTag from the case for seamless operation. Allows updating participant information such as contact details, personal information, and other properties. Requires an eTag value for optimistic locking and returns updated participant details with optional UI resources.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          caseID: {
-            type: 'string',
-            description: 'Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces."ON6E5R-DIYRecipe-Work-RecipeCollection R-1008". a complete case identifier including spaces and special characters.'
-          },
-          participantID: {
-            type: 'string',
-            description: 'Participant ID to update. This identifies the specific participant within the case whose information will be modified.'
-          },
-          eTag: {
-            type: 'string',
-            description: 'Optional. Auto-fetched if omitted. For faster execution, use eTag from previous response.'
-          },
-          content: {
-            type: 'object',
-            description: 'Optional participant data object with properties to update. Can include personal information like pyFirstName, pyLastName, pyEmail1, pyPhoneNumber, etc. Only provided properties will be updated - others remain unchanged.',
-            properties: {
-              pyFirstName: {
-                type: 'string',
-                description: 'First name of the participant'
-              },
-              pyLastName: {
-                type: 'string',
-                description: 'Last name of the participant'
-              },
-              pyFullName: {
-                type: 'string',
-                description: 'Full name of the participant'
-              },
-              pyEmail1: {
-                type: 'string',
-                description: 'Primary email address of the participant'
-              },
-              pyPhoneNumber: {
-                type: 'string',
-                description: 'Phone number of the participant'
-              },
-              pyTitle: {
-                type: 'string',
-                description: 'Title or position of the participant'
-              }
-            }
-          },
-          pageInstructions: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                instruction: {
-                  type: 'string',
-                  enum: ['UPDATE', 'REPLACE', 'DELETE', 'APPEND', 'INSERT', 'MOVE'],
-                  description: 'Page instruction type. UPDATE (add fields to page), REPLACE (replace entire page), DELETE (remove page), APPEND (add item to page list), INSERT (insert item in page list), MOVE (reorder page list items)'
-                },
-                target: {
-                  type: 'string',
-                  description: 'Target embedded page name'
-                },
-                content: {
-                  type: 'object',
-                  description: 'Content to set on the embedded page (required for UPDATE and REPLACE)'
-                }
-              },
-              required: ['instruction', 'target'],
-              description: 'Page operation for embedded pages. Use REPLACE instruction to set embedded page references with full object including pzInsKey. Example: {"instruction": "REPLACE", "target": "PageName", "content": {"Property": "value", "pyID": "ID-123", "pzInsKey": "CLASS-NAME ID-123"}}'
-            },
-            description: 'Optional list of page-related operations for embedded pages, page lists, or page groups. Required for setting embedded page references.'
-          },
-          viewType: {
-            type: 'string',
-            enum: ['form', 'none'],
-            description: 'Type of view data to return after update. "form" returns form UI metadata in uiResources object for display purposes, "none" returns no UI resources. Default: "form".',
-            default: 'form'
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['caseID', 'participantID']
-      }
+      inputSchema: z.object({
+        caseID: z.string().describe('Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces."ON6E5R-DIYRecipe-Work-RecipeCollection R-1008". a complete case identifier including spaces and special characters.'),
+        participantID: z.string().describe('Participant ID to update. This identifies the specific participant within the case whose information will be modified.'),
+        eTag: z.string().optional().describe('Optional. Auto-fetched if omitted. For faster execution, use eTag from previous response. a non-empty string representing case save date time.'),
+        content: z.object({
+          pyFirstName: z.string().optional().describe('First name of the participant'),
+          pyLastName: z.string().optional().describe('Last name of the participant'),
+          pyEmail1: z.string().optional().describe('Email address of the participant'),
+          pyPhoneNumber: z.string().optional().describe('Phone number of the participant'),
+          pyWorkPartyUri: z.string().optional().describe('Unique identifier for the participant'),
+          pyFullName: z.string().optional().describe('Full name of the participant'),
+          pyTitle: z.string().optional().describe('Title of the participant')
+        }).optional().describe('Participant information object containing user details such as name, email, phone, and other contact information. Structure matches Data-Party schema.'),
+        viewType: z.enum(['form', 'none']).default('form').describe('UI resources to return. "form" returns form UI metadata, "none" returns no UI resources (default: "form")'),
+        pageInstructions: z.array(z.object({
+          instruction: z.enum(['UPDATE', 'REPLACE', 'DELETE', 'APPEND', 'INSERT', 'MOVE']).describe('Page instruction type. UPDATE (add fields to page), REPLACE (replace entire page), DELETE (remove page), APPEND (add item to page list), INSERT (insert item in page list), MOVE (reorder page list items)'),
+          target: z.string().describe('Target embedded page name'),
+          content: z.looseObject({}).optional().describe('Content to set on the embedded page (required for UPDATE and REPLACE)')
+        })).optional().describe('Optional list of page-related operations for embedded pages, page lists, or page groups. Required for setting embedded page references.'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,17 +17,10 @@ export class GetAttachmentTool extends BaseTool {
     return {
       name: 'get_attachment',
       description: 'Get the attachment content based on the attachmentID. Returns different content types: Base64 data for file type attachments, URL for URL type attachments, and HTML data for correspondence type attachments. The API validates the attachmentID and checks if the user has access to view the attachment before returning the content.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          attachmentID: {
-            type: 'string',
-            description: 'Link-Attachment instance pzInsKey (attachment ID) to retrieve content for. Format example: "LINK-ATTACHMENT MYCO-PAC-WORK E-47009!20231016T062800.275 GMT". This is the complete instance handle key that uniquely identifies the attachment in the Pega system. The attachment must exist and be accessible to the current user.'
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['attachmentID']
-      }
+      inputSchema: z.object({
+        attachmentID: z.string().describe('Link-Attachment instance pzInsKey (attachment ID) to retrieve content for. Format example: "LINK-ATTACHMENT MYCO-PAC-WORK E-47009!20231016T062800.275 GMT". This is the complete instance handle key that uniquely identifies the attachment in the Pega system. The attachment must exist and be accessible to the current user.'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

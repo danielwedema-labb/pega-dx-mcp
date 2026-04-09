@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,51 +17,17 @@ export class AddCaseAttachmentsTool extends BaseTool {
     return {
       name: 'add_case_attachments',
       description: 'Attach files and/or URLs to a Pega case regardless of the context or stage of the case lifecycle. Can attach temporary uploaded files using their IDs (from upload_attachment tool), or add URL/link attachments directly. Supports multiple attachments in a single atomic operation - if any attachment fails, no attachments are added to the case.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          caseID: {
-            type: 'string',
-            description: 'Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces."OSIEO3-DOCSAPP-WORK T-561003". a complete case identifier including spaces and special characters.'
-          },
-          attachments: {
-            type: 'array',
-            description: 'Array of attachment objects to add to the case. Can contain file attachments (using temporary attachment IDs from upload_attachment tool) and/or URL attachments. All attachments must be successfully processed or none will be attached (atomic operation).',
-            items: {
-              type: 'object',
-              properties: {
-                type: {
-                  type: 'string',
-                  enum: ['File', 'URL'],
-                  description: 'Attachment type. "File" for file attachments or "URL" for URL/link attachments.'
-                },
-                category: {
-                  type: 'string',
-                  enum: ['File', 'URL'],
-                  description: 'Attachment category. Must match the type ("File" or "URL").'
-                },
-                ID: {
-                  type: 'string',
-                  description: 'Temporary attachment ID returned from upload_attachment tool (required for File type). Example: "450b7275-8868-43ca-9827-bcfd9ec1b54b". Note: Temporary attachments expire after 2 hours if not linked to a case.'
-                },
-                url: {
-                  type: 'string',
-                  description: 'URL/link to attach to the case (required for URL type). Example: "https://www.google.com". a valid URL format.'
-                },
-                name: {
-                  type: 'string',
-                  description: 'Display name for the URL attachment (required for URL type). Example: "google". This will be shown as the attachment name in the case.'
-                }
-              },
-              required: ['type', 'category']
-            },
-            minItems: 1,
-            maxItems: 50
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['caseID', 'attachments']
-      }
+      inputSchema: z.object({
+        caseID: z.string().describe('Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces."OSIEO3-DOCSAPP-WORK T-561003". a complete case identifier including spaces and special characters.'),
+        attachments: z.array(z.object({
+          type: z.enum(['File', 'URL']).describe('Attachment type. "File" for file attachments or "URL" for URL/link attachments.'),
+          category: z.enum(['File', 'URL']).describe('Attachment category. Must match the type ("File" or "URL").'),
+          ID: z.string().optional().describe('Temporary attachment ID returned from upload_attachment tool (required for File type). Example: "450b7275-8868-43ca-9827-bcfd9ec1b54b". Note: Temporary attachments expire after 2 hours if not linked to a case.'),
+          url: z.string().optional().describe('URL/link to attach to the case (required for URL type). Example: "https://www.google.com". a valid URL format.'),
+          name: z.string().optional().describe('Display name for the URL attachment (required for URL type). Example: "google". This will be shown as the attachment name in the case.')
+        })).min(1).describe('Array of attachment objects to add to the case. Can contain file attachments (using temporary attachment IDs from upload_attachment tool) and/or URL attachments. All attachments must be successfully processed or none will be attached (atomic operation).'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

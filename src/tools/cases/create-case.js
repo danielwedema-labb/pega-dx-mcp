@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 import {
@@ -24,85 +25,25 @@ export class CreateCaseTool extends BaseTool {
     return {
       name: 'create_case',
       description: 'Create a new Pega case. This is the FIRST step in case workflows. Automatically creates the initial assignment (returned in nextAssignmentInfo). Many case types accept empty content {}. If fields required, automatic field discovery provides guidance. Returns: caseID, assignmentID (in nextAssignmentInfo.ID), eTag. Next steps: use get_assignment with assignmentID to view form fields.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          caseTypeID: {
-            type: 'string',
-            description: 'Case type ID (Example: "Org-App-Work-CaseType"). Use get_case_types to discover available types.'
-          },
-          parentCaseID: {
-            type: 'string',
-            description: 'Parent case ID for child case creation'
-          },
-          processID: {
-            type: 'string',
-            description: 'Starting process ID to use for case creation (Example: "pyStartCase"). Optional parameter that specifies which flow to use when creating the case. Some case types may require this to bypass initial validation.'
-          },
-          content: {
-            type: 'object',
-            description: 'Field values for case creation (optional). Empty {} often works. If fields required, automatic discovery provides guidance. For embedded pages use pageInstructions.'
-          },
-          pageInstructions: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                instruction: {
-                  type: 'string',
-                  enum: ['UPDATE', 'REPLACE', 'DELETE', 'APPEND', 'INSERT', 'MOVE'],
-                  description: 'Page instruction type. UPDATE (add fields to page), REPLACE (replace entire page), DELETE (remove page), APPEND (add item to page list), INSERT (insert item in page list), MOVE (reorder page list items)'
-                },
-                target: {
-                  type: 'string',
-                  description: 'Target embedded page name (Example: "Collection", "Datasource")'
-                },
-                content: {
-                  type: 'object',
-                  description: 'Content to set on the embedded page (required for UPDATE and REPLACE)'
-                }
-              },
-              required: ['instruction', 'target'],
-              description: 'Page operation for embedded pages. IMPORTANT: Use REPLACE instruction to set embedded page references like Collection or Datasource with full object including pzInsKey. Example: {"instruction": "REPLACE", "target": "Collection", "content": {"CollectionName": "knowledge", "pyID": "DC-1", "pzInsKey": "PEGAFW-QNA-WORK DC-1"}}'
-            },
-            description: 'Optional list of page-related operations for embedded pages, page lists, or page groups. Required for setting embedded page references (Example: Collection, Datasource). See Pega DX API documentation on page instructions for embedded pages.'
-          },
-          attachments: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                fileName: {
-                  type: 'string',
-                  description: 'Name of the attachment file'
-                },
-                fileContent: {
-                  type: 'string',
-                  description: 'Base64 encoded file content'
-                },
-                mimeType: {
-                  type: 'string',
-                  description: 'MIME type of the attachment'
-                }
-              },
-              description: 'Attachment object with file details and metadata'
-            },
-            description: 'A list of attachments to be added to specific attachment fields (optional)'
-          },
-          viewType: {
-            type: 'string',
-            enum: ['none', 'form', 'page'],
-            description: 'UI resources to return. "none" returns no UI resources, "form" returns form UI metadata, "page" returns full page UI metadata',
-            default: 'none'
-          },
-          pageName: {
-            type: 'string',
-            description: 'If provided, view metadata for specific page name will be returned (only used when viewType is "page")'
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['caseTypeID']
-      }
+      inputSchema: z.object({
+        caseTypeID: z.string().describe('Case type ID. Use get_case_types to discover available types.'),
+        parentCaseID: z.string().optional().describe('Parent case ID for child case creation'),
+        processID: z.string().optional().describe('Starting process ID to use for case creation (Example: "pyStartCase"). Optional parameter that specifies which flow to use when creating the case. Some case types may require this to bypass initial validation.'),
+        content: z.looseObject({}).optional().describe('Field values for case creation (optional). Empty {} often works. If fields required, automatic discovery provides guidance. For embedded pages use pageInstructions.'),
+        pageInstructions: z.array(z.object({
+          instruction: z.enum(['UPDATE', 'REPLACE', 'DELETE', 'APPEND', 'INSERT', 'MOVE']).describe('Page instruction type. UPDATE (add fields to page), REPLACE (replace entire page), DELETE (remove page), APPEND (add item to page list), INSERT (insert item in page list), MOVE (reorder page list items)'),
+          target: z.string().describe('Target embedded page name (Example: "Collection", "Datasource")'),
+          content: z.looseObject({}).optional().describe('Content to set on the embedded page (required for UPDATE and REPLACE)')
+        }).describe('Page operation for embedded pages. IMPORTANT: Use REPLACE instruction to set embedded page references like Collection or Datasource with full object including pzInsKey. Example: {"instruction": "REPLACE", "target": "Collection", "content": {"CollectionName": "knowledge", "pyID": "DC-1", "pzInsKey": "PEGAFW-QNA-WORK DC-1"}}')).optional().describe('Optional list of page-related operations for embedded pages, page lists, or page groups. Required for setting embedded page references (Example: Collection, Datasource). See Pega DX API documentation on page instructions for embedded pages.'),
+        attachments: z.array(z.object({
+          fileName: z.string().optional().describe('Name of the attachment file'),
+          fileContent: z.string().optional().describe('Base64 encoded file content'),
+          mimeType: z.string().optional().describe('MIME type of the attachment')
+        }).describe('Attachment object with file details and metadata')).optional().describe('A list of attachments to be added to specific attachment fields (optional)'),
+        viewType: z.enum(['none', 'form', 'page']).optional().describe('UI resources to return. "none" returns no UI resources, "form" returns form UI metadata, "page" returns full page UI metadata'),
+        pageName: z.string().optional().describe('If provided, view metadata for specific page name will be returned (only used when viewType is "page")'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 
@@ -119,65 +60,65 @@ export class CreateCaseTool extends BaseTool {
 
       // Validate required parameters using base class
       const requiredValidation = this.validateRequiredParams(params, ['caseTypeID']);
-    if (requiredValidation) {
-      return requiredValidation;
-    }
-
-    // Validate enum parameters using base class
-    const enumValidation = this.validateEnumParams(params, {
-      viewType: ['none', 'form', 'page']
-    });
-    if (enumValidation) {
-      return enumValidation;
-    }
-
-    // Validate pageName usage
-    if (pageName && viewType !== 'page') {
-      return {
-        error: 'pageName parameter can only be used when viewType is set to "page".'
-      };
-    }
-
-    // Validate parentCaseID format if provided
-    if (parentCaseID && (typeof parentCaseID !== 'string' || parentCaseID.trim() === '')) {
-      return {
-        error: 'Invalid parentCaseID parameter. Parent case ID must be a non-empty string if provided.'
-      };
-    }
-
-    // PROACTIVE: Auto-discover when no content provided
-    // Try creation with empty content first for both V1 and V2 (many case types accept empty content)
-    if (!content || Object.keys(content).length === 0) {
-      const apiVersion = this.pegaClient.getApiVersion();
-
-      // Try creation with empty content first (works for many case types)
-      const emptyResult = await this.executeWithErrorHandling(
-        `Case Creation: ${caseTypeID}`,
-        async () => await this.pegaClient.createCase({
-          caseTypeID: caseTypeID.trim(),
-          parentCaseID: parentCaseID?.trim(),
-          processID: processID?.trim(),
-          content: {},
-          pageInstructions,
-          attachments,
-          viewType,
-          pageName
-        }),
-        { caseTypeID, viewType, pageName, sessionInfo }
-      );
-
-      // If empty content worked, return success
-      if (emptyResult.content && emptyResult.content[0].text.includes('✅')) {
-        return emptyResult;
+      if (requiredValidation) {
+        return requiredValidation;
       }
 
-      // If it failed, provide version-specific guidance
-      if (apiVersion === 'v1') {
-        // V1: Field discovery not supported, provide manual guidance
+      // Validate enum parameters using base class
+      const enumValidation = this.validateEnumParams(params, {
+        viewType: ['none', 'form', 'page']
+      });
+      if (enumValidation) {
+        return enumValidation;
+      }
+
+      // Validate pageName usage
+      if (pageName && viewType !== 'page') {
         return {
-          content: [{
-            type: 'text',
-            text: `## V1 Case Creation Failed
+          error: 'pageName parameter can only be used when viewType is set to "page".'
+        };
+      }
+
+      // Validate parentCaseID format if provided
+      if (parentCaseID && (typeof parentCaseID !== 'string' || parentCaseID.trim() === '')) {
+        return {
+          error: 'Invalid parentCaseID parameter. Parent case ID must be a non-empty string if provided.'
+        };
+      }
+
+      // PROACTIVE: Auto-discover when no content provided
+      // Try creation with empty content first for both V1 and V2 (many case types accept empty content)
+      if (!content || Object.keys(content).length === 0) {
+        const apiVersion = this.pegaClient.getApiVersion();
+
+        // Try creation with empty content first (works for many case types)
+        const emptyResult = await this.executeWithErrorHandling(
+          `Case Creation: ${caseTypeID}`,
+          async () => await this.pegaClient.createCase({
+            caseTypeID: caseTypeID.trim(),
+            parentCaseID: parentCaseID?.trim(),
+            processID: processID?.trim(),
+            content: {},
+            pageInstructions,
+            attachments,
+            viewType,
+            pageName
+          }),
+          { caseTypeID, viewType, pageName, sessionInfo }
+        );
+
+        // If empty content worked, return success
+        if (emptyResult.content && emptyResult.content[0].text.includes('✅')) {
+          return emptyResult;
+        }
+
+        // If it failed, provide version-specific guidance
+        if (apiVersion === 'v1') {
+          // V1: Field discovery not supported, provide manual guidance
+          return {
+            content: [{
+              type: 'text',
+              text: `## V1 Case Creation Failed
 
 ${emptyResult.content?.[0]?.text || 'Case creation with empty content failed.'}
 
@@ -198,34 +139,34 @@ Provide the content object with your case fields directly:
 \`\`\`
 
 **Tip**: Consult your Pega application's case type configuration to determine which fields are required.`
-          }]
-        };
+            }]
+          };
+        }
+
+        // V2: Check if error is truly field-related before doing field discovery
+        if (this.isFieldRelatedErrorInResult(emptyResult)) {
+          return await this.discoverFieldsAndGuide(caseTypeID, { message: this.extractErrorMessage(emptyResult) });
+        }
+
+        // Not field-related, return the actual error
+        return emptyResult;
       }
 
-      // V2: Check if error is truly field-related before doing field discovery
-      if (this.isFieldRelatedErrorInResult(emptyResult)) {
-        return await this.discoverFieldsAndGuide(caseTypeID, { message: this.extractErrorMessage(emptyResult) });
-      }
-
-      // Not field-related, return the actual error
-      return emptyResult;
-    }
-
-    // NORMAL: Try creation with provided content
-    const result = await this.executeWithErrorHandling(
-      `Case Creation: ${caseTypeID}`,
-      async () => await this.pegaClient.createCase({
-        caseTypeID: caseTypeID.trim(),
-        parentCaseID: parentCaseID?.trim(),
-        processID: processID?.trim(),
-        content,
-        pageInstructions,
-        attachments,
-        viewType,
-        pageName
-      }),
-      { caseTypeID, viewType, pageName, sessionInfo }
-    );
+      // NORMAL: Try creation with provided content
+      const result = await this.executeWithErrorHandling(
+        `Case Creation: ${caseTypeID}`,
+        async () => await this.pegaClient.createCase({
+          caseTypeID: caseTypeID.trim(),
+          parentCaseID: parentCaseID?.trim(),
+          processID: processID?.trim(),
+          content,
+          pageInstructions,
+          attachments,
+          viewType,
+          pageName
+        }),
+        { caseTypeID, viewType, pageName, sessionInfo }
+      );
 
       // REACTIVE: If the result contains a field-related error, auto-discover and guide
       if (this.isFieldRelatedErrorInResult(result)) {
@@ -297,18 +238,18 @@ ${sessionInfo ? `**Session**: ${sessionInfo.sessionId} (${sessionInfo.authMode} 
     if (!dataObjectsData || !Array.isArray(dataObjectsData)) {
       return null;
     }
-    
+
     // Look for exact match first
     let caseTypeData = dataObjectsData.find(obj => obj.classID === caseTypeID);
-    
+
     // If no exact match, try partial matching (case insensitive)
     if (!caseTypeData) {
       const caseTypeIDLower = caseTypeID.toLowerCase();
-      caseTypeData = dataObjectsData.find(obj => 
+      caseTypeData = dataObjectsData.find(obj =>
         obj.classID && obj.classID.toLowerCase().includes(caseTypeIDLower)
       );
     }
-    
+
     return caseTypeData;
   }
 
@@ -376,10 +317,10 @@ ${sessionInfo ? `**Session**: ${sessionInfo.sessionId} (${sessionInfo.authMode} 
    */
   mapDataViewFieldType(dataType) {
     if (!dataType) return 'Text';
-    
+
     const typeMapping = {
       'Text': 'Text',
-      'Text (single line)': 'Text', 
+      'Text (single line)': 'Text',
       'Text (multiple lines)': 'Text',
       'Integer': 'Integer',
       'Decimal': 'Decimal',
@@ -394,7 +335,7 @@ ${sessionInfo ? `**Session**: ${sessionInfo.sessionId} (${sessionInfo.authMode} 
       'Page List': 'Page List',
       'Page Group': 'Page Group'
     };
-    
+
     return typeMapping[dataType] || 'Text';
   }
 
@@ -560,7 +501,7 @@ ${sessionInfo ? `**Session**: ${sessionInfo.sessionId} (${sessionInfo.authMode} 
    */
   generateFieldExample(fieldType, fieldName) {
     const fieldNameLower = fieldName.toLowerCase();
-    
+
     // Smart field name based examples
     if (fieldNameLower.includes('name')) return 'Sample Name';
     if (fieldNameLower.includes('email')) return 'user@example.com';
@@ -577,7 +518,7 @@ ${sessionInfo ? `**Session**: ${sessionInfo.sessionId} (${sessionInfo.authMode} 
     if (fieldNameLower.includes('url') || fieldNameLower.includes('link')) return 'https://example.com';
     if (fieldNameLower.includes('address')) return '123 Main Street, City, State 12345';
     if (fieldNameLower.includes('comment')) return 'Sample comment or note';
-    
+
     // Type-based examples
     const examples = {
       'Text': 'Sample text value',
@@ -589,7 +530,7 @@ ${sessionInfo ? `**Session**: ${sessionInfo.sessionId} (${sessionInfo.authMode} 
       'Page List': [],
       'Page': {}
     };
-    
+
     return examples[fieldType] || 'Sample value';
   }
 
@@ -598,32 +539,32 @@ ${sessionInfo ? `**Session**: ${sessionInfo.sessionId} (${sessionInfo.authMode} 
    */
   formatFieldDiscoveryGuidanceFromDataView(caseTypeID, processedFields, caseTypeData, originalError = null, attemptedContent = null) {
     let response = `## Field Discovery for Case Type: ${caseTypeID}\n\n`;
-    
+
     // Add timestamp
     response += `*Field discovery completed at: ${new Date().toISOString()}*\n\n`;
-    
+
     // Add data view information
     response += `**Data View**: ${caseTypeData.defaultListDataView}\n`;
     response += `**Case Type Description**: ${caseTypeData.description || 'N/A'}\n\n`;
-    
-    
+
+
     // Show original error if provided
     if (originalError) {
       response += `### ❌ Case Creation Error\n`;
       response += `**Error**: ${originalError.message}\n\n`;
-      
+
       if (attemptedContent && Object.keys(attemptedContent).length > 0) {
         response += `**Attempted Content**:\n`;
         response += `\`\`\`json\n${JSON.stringify(attemptedContent, null, 2)}\n\`\`\`\n\n`;
       }
     }
-    
+
     response += `### 📋 Available Fields for Case Creation\n\n`;
-    
+
     if (processedFields.length > 0) {
       response += `| Field Name | Type | Label | Required | Category | Example |\n`;
       response += `|------------|------|-------|----------|----------|----------|\n`;
-      
+
       // Sort fields by category first, then alphabetically
       processedFields.sort((a, b) => {
         if (a.category !== b.category) {
@@ -631,37 +572,37 @@ ${sessionInfo ? `**Session**: ${sessionInfo.sessionId} (${sessionInfo.authMode} 
         }
         return a.name.localeCompare(b.name);
       });
-      
+
       processedFields.forEach(field => {
         const example = this.generateFieldExample(field.type, field.name);
         const exampleStr = typeof example === 'string' ? example : JSON.stringify(example);
         const requiredIcon = field.required ? '✅' : '';
         const category = field.category || 'General';
-        
+
         response += `| ${field.name} | ${field.type} | ${field.label} | ${requiredIcon} | ${category} | ${exampleStr} |\n`;
       });
-      
+
       response += `\n*Required fields are marked with ✅*\n`;
       response += `*OOTB Pega fields (px, py, pz) have been filtered out*\n\n`;
     } else {
       response += `No business fields discovered after filtering OOTB fields. This case type may be configured for automatic field population or may require different parameters.\n\n`;
     }
-    
+
     // Generate sample case creation request
     response += `### 🚀 Sample Case Creation Request\n\n`;
     response += `\`\`\`json\n`;
     response += `{\n`;
     response += `  "caseTypeID": "${caseTypeID}",\n`;
     response += `  "content": {\n`;
-    
+
     if (processedFields.length > 0) {
       // Show up to 5 fields for the sample
       const sampleFields = processedFields.slice(0, 5);
-      
+
       sampleFields.forEach((field, index) => {
         const example = this.generateFieldExample(field.type, field.name);
         const comma = index < sampleFields.length - 1 ? ',' : '';
-        
+
         if (field.type === 'Page List') {
           response += `    "${field.name}": []${comma}  // Array of objects\n`;
         } else if (field.type === 'Page') {
@@ -675,11 +616,11 @@ ${sessionInfo ? `**Session**: ${sessionInfo.sessionId} (${sessionInfo.authMode} 
       response += `    "Description": "Sample case description",\n`;
       response += `    "Priority": "Medium"\n`;
     }
-    
+
     response += `  }\n`;
     response += `}\n`;
     response += `\`\`\`\n\n`;
-    
+
     // Add helpful tips
     response += `### 💡 Tips for Successful Case Creation\n\n`;
     response += `1. **Data View Based**: Fields discovered from ${caseTypeData.defaultListDataView}\n`;
@@ -709,7 +650,7 @@ ${sessionInfo ? `**Session**: ${sessionInfo.sessionId} (${sessionInfo.authMode} 
     response += `}\n`;
     response += `\`\`\`\n\n`;
     response += `**Available Instructions**: UPDATE (add fields), REPLACE (replace entire page), DELETE (remove page)\n\n`;
-    
+
     // Add workflow guidance
     response += `### 🔄 Recommended Workflow\n\n`;
     response += `**For Case Creation**:\n`;
@@ -723,7 +664,7 @@ ${sessionInfo ? `**Session**: ${sessionInfo.sessionId} (${sessionInfo.authMode} 
     response += `2. Use get_assignment with the assignment ID to view form structure and required fields\n`;
     response += `3. Use refresh_assignment_action for progressive form updates (optional)\n`;
     response += `4. Use perform_assignment_action with all required fields to submit the assignment\n\n`;
-    
+
     // Add troubleshooting section
     response += `### 🔧 Troubleshooting\n\n`;
     if (processedFields.length === 0) {
@@ -735,7 +676,7 @@ ${sessionInfo ? `**Session**: ${sessionInfo.sessionId} (${sessionInfo.authMode} 
       response += `- **AllowedStartingFields**: Ensure fields are configured in the case type's AllowedStartingFields Data Transform\n`;
       response += `- **Case Access**: Verify you have permission to create cases of this type\n`;
     }
-    
+
     return response;
   }
 
@@ -744,34 +685,34 @@ ${sessionInfo ? `**Session**: ${sessionInfo.sessionId} (${sessionInfo.authMode} 
    */
   formatFieldDiscoveryGuidance(caseTypeID, discoveryData, originalError = null, attemptedContent = null) {
     let response = `## Field Discovery for Case Type: ${caseTypeID}\n\n`;
-    
+
     // Add timestamp
     response += `*Field discovery completed at: ${new Date().toISOString()}*\n\n`;
-    
+
     // Show original error if provided
     if (originalError) {
       response += `### ❌ Case Creation Error\n`;
       response += `**Error**: ${originalError.message}\n\n`;
-      
+
       if (attemptedContent && Object.keys(attemptedContent).length > 0) {
         response += `**Attempted Content**:\n`;
         response += `\`\`\`json\n${JSON.stringify(attemptedContent, null, 2)}\n\`\`\`\n\n`;
       }
     }
-    
+
     response += `### 📋 Available Fields for Case Creation\n\n`;
-    
+
     // Extract and display fields from UI resources
     const fields = [];
-    
+
     // The API response structure is: discoveryData.data.uiResources.resources.fields
     const uiResources = discoveryData.data?.uiResources;
     if (uiResources?.resources?.fields) {
       const fieldResources = uiResources.resources.fields;
-      
+
       Object.entries(fieldResources).forEach(([fieldName, fieldData]) => {
         const field = Array.isArray(fieldData) ? fieldData[0] : fieldData;
-        
+
         // Include fields for the case type (flexible matching for both short and full class names)
         if (field.classID && (field.classID === caseTypeID || field.classID.includes(caseTypeID))) {
           fields.push({
@@ -783,48 +724,48 @@ ${sessionInfo ? `**Session**: ${sessionInfo.sessionId} (${sessionInfo.authMode} 
         }
       });
     }
-    
+
     if (fields.length > 0) {
       response += `| Field Name | Type | Label | Required | Example |\n`;
       response += `|------------|------|-------|----------|----------|\n`;
-      
+
       // Sort fields by required first, then alphabetically
       fields.sort((a, b) => {
         if (a.required && !b.required) return -1;
         if (!a.required && b.required) return 1;
         return a.name.localeCompare(b.name);
       });
-      
+
       fields.forEach(field => {
         const example = this.generateFieldExample(field.type, field.name);
         const exampleStr = typeof example === 'string' ? example : JSON.stringify(example);
         const requiredIcon = field.required ? '✅' : '';
-        
+
         response += `| ${field.name} | ${field.type} | ${field.label} | ${requiredIcon} | ${exampleStr} |\n`;
       });
-      
+
       response += `\n*Required fields are marked with ✅*\n\n`;
     } else {
       response += `No specific fields discovered. This case type may accept any content fields.\n\n`;
     }
-    
+
     // Generate sample case creation request
     response += `### 🚀 Sample Case Creation Request\n\n`;
     response += `\`\`\`json\n`;
     response += `{\n`;
     response += `  "caseTypeID": "${caseTypeID}",\n`;
     response += `  "content": {\n`;
-    
+
     if (fields.length > 0) {
       // Show required fields first, then some optional ones
       const requiredFields = fields.filter(f => f.required).slice(0, 3);
       const optionalFields = fields.filter(f => !f.required).slice(0, 3);
       const sampleFields = [...requiredFields, ...optionalFields];
-      
+
       sampleFields.forEach((field, index) => {
         const example = this.generateFieldExample(field.type, field.name);
         const comma = index < sampleFields.length - 1 ? ',' : '';
-        
+
         if (field.type === 'Page List') {
           response += `    "${field.name}": []${comma}  // Array of objects\n`;
         } else if (field.type === 'Page') {
@@ -836,11 +777,11 @@ ${sessionInfo ? `**Session**: ${sessionInfo.sessionId} (${sessionInfo.authMode} 
     } else {
       response += `    "SampleField": "Sample Value"\n`;
     }
-    
+
     response += `  }\n`;
     response += `}\n`;
     response += `\`\`\`\n\n`;
-    
+
     // Add helpful tips
     response += `### 💡 Tips for Successful Case Creation\n\n`;
     response += `1. **Required Fields**: Include all fields marked with ✅\n`;
@@ -848,14 +789,14 @@ ${sessionInfo ? `**Session**: ${sessionInfo.sessionId} (${sessionInfo.authMode} 
     response += `3. **Time Format**: Use "HH:MM" format for TimeOfDay fields (Example: "00:30")\n`;
     response += `4. **Date Format**: Use "YYYY-MM-DD" format for Date fields\n`;
     response += `5. **Complex Fields**: Page List = arrays, Page = nested objects\n\n`;
-    
+
     // Add workflow guidance
     response += `### 🔄 Recommended Workflow\n\n`;
     response += `1. Review the available fields above\n`;
     response += `2. Use the sample JSON as a template\n`;
     response += `3. Customize field values for your specific case\n`;
     response += `4. Call create_case again with your content object\n\n`;
-    
+
     return response;
   }
 
@@ -888,11 +829,11 @@ ${sessionInfo ? `**Session**: ${sessionInfo.sessionId} (${sessionInfo.authMode} 
       response += `**eTag**: ${data.etag}\n`;
       response += `*Save this eTag for future case updates*\n\n`;
     }
-    
+
     // Display case information
     if (data.data) {
       response += '### Case Information\n';
-      
+
       if (data.data.caseInfo) {
         const caseInfo = data.data.caseInfo;
         response += `- **Case Type**: ${caseInfo.caseTypeName || 'N/A'}\n`;
@@ -946,7 +887,7 @@ ${sessionInfo ? `**Session**: ${sessionInfo.sessionId} (${sessionInfo.authMode} 
       }
       response += '\n';
     }
-    
+
     return response;
   }
 
@@ -998,8 +939,8 @@ ${sessionInfo ? `**Session**: ${sessionInfo.sessionId} (${sessionInfo.authMode} 
         const dataSource = field.datasource?.type === 'datapage'
           ? `📊 ${field.datasource.dataPageID}`
           : field.datasource?.type === 'associated'
-          ? '📋 Associated'
-          : '';
+            ? '📋 Associated'
+            : '';
         response += `| ${field.name} | ${field.type} | ${field.label} | ${dataSource} |\n`;
       });
 
@@ -1016,8 +957,8 @@ ${sessionInfo ? `**Session**: ${sessionInfo.sessionId} (${sessionInfo.authMode} 
         const dataSource = field.datasource?.type === 'datapage'
           ? `📊 ${field.datasource.dataPageID}`
           : field.datasource?.type === 'associated'
-          ? '📋 Associated'
-          : '';
+            ? '📋 Associated'
+            : '';
         response += `| ${field.name} | ${field.type} | ${field.label} | ${dataSource} |\n`;
       });
 

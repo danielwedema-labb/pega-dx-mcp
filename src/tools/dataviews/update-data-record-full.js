@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,22 +17,11 @@ export class UpdateDataRecordFullTool extends BaseTool {
     return {
       name: 'update_data_record_full',
       description: 'Fully update an existing data record based on conditional save plan configured for a savable Data Page. Overrides the entire data record with the provided data object.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          dataViewID: {
-            type: 'string',
-            description: 'ID of savable Data Page to update. a valid, existing data view identifier.'
-          },
-          data: {
-            type: 'object',
-            description: 'Data object containing all properties to update in the data record. This will replace the entire existing record.',
-            additionalProperties: true
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['dataViewID', 'data']
-      }
+      inputSchema: z.object({
+        dataViewID: z.string().describe('ID of savable Data Page to update. a valid, existing data view identifier.'),
+        data: z.looseObject({}).describe('Data object containing all properties to update in the data record. This will replace the entire existing record.'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

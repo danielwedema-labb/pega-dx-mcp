@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -17,72 +18,21 @@ export class BulkCasesPatchTool extends BaseTool {
     return {
       name: 'bulk_cases_patch',
       description: 'Perform case action on multiple cases simultaneously using PATCH /api/application/v2/cases endpoint. In Infinity, actions are performed synchronously. In Launchpad, actions are performed asynchronously in the background. Only supports case-wide actions that update cases directly - assignment-level actions like Transfer and Adjust Assignment SLA are not supported.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          actionID: {
-            type: 'string',
-            description: 'Action ID for case/stage action (Example: "pyUpdateCaseDetails", "pyApproval"). CRITICAL: Action IDs are CASE-SENSITIVE and have no spaces even if display names do ("Edit details" → "pyUpdateCaseDetails"). Use get_case to find correct ID from availableActions array - use "ID" field not "name" field. This action must be a case-wide action that updates cases directly.'
-          },
-          cases: {
-            type: 'array',
-            description: 'Array of case objects to perform the action on. Each case object must contain an ID property with the full case handle. Cannot be empty.',
-            items: {
-              type: 'object',
-              properties: {
-                ID: {
-                  type: 'string',
-                  description: 'Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces.'
-                }
-              },
-              required: ['ID']
-            },
-            minItems: 1
-          },
-          runningMode: {
-            type: 'string',
-            enum: ['async'],
-            description: 'Execution mode for Launchpad only. "async" schedules the action to be performed in the background rather than immediately. Not applicable for Infinity which always executes synchronously. Currently, only async runningMode is implemented in Launchpad.'
-          },
-          content: {
-            type: 'object',
-            description: 'A map of scalar properties and embedded page properties to be set during action execution. Same format as single case action content.'
-          },
-          pageInstructions: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                instruction: {
-                  type: 'string',
-                  enum: ['UPDATE', 'REPLACE', 'DELETE', 'APPEND', 'INSERT', 'MOVE'],
-                  description: 'Page instruction type. UPDATE (add fields to page), REPLACE (replace entire page), DELETE (remove page), APPEND (add item to page list), INSERT (insert item in page list), MOVE (reorder page list items)'
-                },
-                target: {
-                  type: 'string',
-                  description: 'Target embedded page name'
-                },
-                content: {
-                  type: 'object',
-                  description: 'Content to set on the embedded page (required for UPDATE and REPLACE)'
-                }
-              },
-              required: ['instruction', 'target'],
-              description: 'Page operation for embedded pages. Use REPLACE instruction to set embedded page references with full object including pzInsKey. Example: {"instruction": "REPLACE", "target": "PageName", "content": {"Property": "value", "pyID": "ID-123", "pzInsKey": "CLASS-NAME ID-123"}}'
-            },
-            description: 'Optional list of page-related operations for embedded pages, page lists, or page groups. Required for setting embedded page references.'
-          },
-          attachments: {
-            type: 'array',
-            description: 'A list of attachments to be added to specific attachment fields during action execution.',
-            items: {
-              type: 'object'
-            }
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['actionID', 'cases']
-      }
+      inputSchema: z.object({
+        actionID: z.string().describe('Action ID for case/stage action (Example: "pyUpdateCaseDetails", "pyApproval"). CRITICAL: Action IDs are CASE-SENSITIVE and have no spaces even if display names do ("Edit details" → "pyUpdateCaseDetails"). Use get_case to find correct ID from availableActions array - use "ID" field not "name" field. This action must be a case-wide action that updates cases directly.'),
+        cases: z.array(z.object({
+          ID: z.string().describe('Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces.')
+        })).min(1).describe('Array of case objects to perform the action on. Each case object must contain an ID property with the full case handle. Cannot be empty.'),
+        runningMode: z.enum(['async']).optional().describe('Execution mode for Launchpad only. "async" schedules the action to be performed in the background rather than immediately. Not applicable for Infinity which always executes synchronously. Currently, only async runningMode is implemented in Launchpad.'),
+        content: z.looseObject({}).optional().describe('A map of scalar properties and embedded page properties to be set during action execution. Same format as single case action content.'),
+        pageInstructions: z.array(z.object({
+          instruction: z.enum(['UPDATE', 'REPLACE', 'DELETE', 'APPEND', 'INSERT', 'MOVE']).describe('Page instruction type. UPDATE (add fields to page), REPLACE (replace entire page), DELETE (remove page), APPEND (add item to page list), INSERT (insert item in page list), MOVE (reorder page list items)'),
+          target: z.string().describe('Target embedded page name'),
+          content: z.looseObject({}).optional().describe('Content to set on the embedded page (required for UPDATE and REPLACE)')
+        }).describe('Page operation for embedded pages. Use REPLACE instruction to set embedded page references with full object including pzInsKey. Example: {"instruction": "REPLACE", "target": "PageName", "content": {"Property": "value", "pyID": "ID-123", "pzInsKey": "CLASS-NAME ID-123"}}')).optional().describe('Optional list of page-related operations for embedded pages, page lists, or page groups. Required for setting embedded page references.'),
+        attachments: z.array(z.looseObject({})).optional().describe('A list of attachments to be added to specific attachment fields during action execution.'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

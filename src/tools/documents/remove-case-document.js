@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,21 +17,11 @@ export class RemoveCaseDocumentTool extends BaseTool {
     return {
       name: 'remove_case_document',
       description: 'Remove a document that is linked to a specific Pega case. This operation permanently removes the link between the document and the case. The document ID and case ID must both be valid and the user must have appropriate permissions to remove documents from the case.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          caseID: {
-            type: 'string',
-            description: 'Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces.'
-          },
-          documentID: {
-            type: 'string',
-            description: 'Document ID. Unique identifier in Pega system.'
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['caseID', 'documentID']
-      }
+      inputSchema: z.object({
+        caseID: z.string().describe('Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces.'),
+        documentID: z.string().describe('Document ID to retrieve content for. This is the unique identifier that identifies the specific document in the Pega system. The document must exist and be accessible to the current user.'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 
@@ -104,7 +95,7 @@ export class RemoveCaseDocumentTool extends BaseTool {
     const { caseID, documentID, sessionInfo } = options;
     const content = data.data || data;
     const headers = data.headers || {};
-    
+
     let response = `## ${operation}\n\n`;
 
     response += `*Operation completed at: ${new Date().toISOString()}*\n\n`;
@@ -120,7 +111,7 @@ export class RemoveCaseDocumentTool extends BaseTool {
     response += `- **Case ID**: ${caseID}\n`;
     response += `- **Document ID**: ${documentID}\n`;
     response += `- **Status**: Document successfully removed from case\n`;
-    
+
     // Check cache control header
     const cacheControl = headers['cache-control'] || headers['Cache-Control'] || '';
     if (cacheControl) {
@@ -153,7 +144,7 @@ export class RemoveCaseDocumentTool extends BaseTool {
     response += `- **Case Impact**: Only the link between document and case has been removed\n`;
     response += `- **Permissions**: This operation required document removal permissions\n`;
     response += `- **Audit Trail**: Document removal is typically logged in case history\n`;
-    
+
     return response;
   }
 
@@ -163,16 +154,16 @@ export class RemoveCaseDocumentTool extends BaseTool {
   formatErrorResponse(operation, error, options = {}) {
     const { caseID, documentID } = options;
     let response = `## Error Removing Document from Case\n\n`;
-    
+
     response += `**Case ID**: ${caseID}\n`;
     response += `**Document ID**: ${documentID}\n`;
     response += `**Error Type**: ${error.type}\n`;
     response += `**Message**: ${error.message}\n`;
-    
+
     if (error.details) {
       response += `**Details**: ${error.details}\n`;
     }
-    
+
     if (error.status) {
       response += `**HTTP Status**: ${error.status} ${error.statusText}\n`;
     }

@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,36 +17,14 @@ export class ChangeToStageTool extends BaseTool {
     return {
       name: 'change_to_stage',
       description: 'Change to a specified stage of a case based on stageID passed. Allows navigation to any valid stage (primary, alternate) within a case workflow. If no eTag is provided, automatically fetches the latest eTag from the case action for seamless operation.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          caseID: {
-            type: 'string',
-            description: 'Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces.'
-          },
-          stageID: {
-            type: 'string',
-            description: 'Stage ID to navigate to (Example: "PRIM1", "ALT1"). a valid stage identifier for the case type.'
-          },
-          eTag: {
-            type: 'string',
-            description: 'Optional. Auto-fetched if omitted. For faster execution, use eTag from previous response.'
-          },
-          viewType: {
-            type: 'string',
-            enum: ['none', 'form', 'page'],
-            description: 'UI resources to return. "none" returns no UI resources (default), "form" returns form UI metadata in read-only review mode, "page" returns full page UI metadata in read-only review mode.',
-            default: 'none'
-          },
-          cleanupProcesses: {
-            type: 'boolean',
-            description: 'Whether to clean up the processes, including assignments, of the stage being switched away from. Default is true. Set to false to opt out of this cleanup feature.',
-            default: true
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['caseID', 'stageID']
-      }
+      inputSchema: z.object({
+        caseID: z.string().describe('Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces.'),
+        stageID: z.string().describe('Stage ID to navigate to (Example: "PRIM1", "ALT1"). a valid stage identifier for the case type.'),
+        eTag: z.string().optional().describe('Optional. Auto-fetched if omitted. For faster execution, use eTag from previous response.'),
+        viewType: z.enum(['none', 'form', 'page']).optional().describe('UI resources to return. "none" returns no UI resources (default), "form" returns form UI metadata in read-only review mode, "page" returns full page UI metadata in read-only review mode.'),
+        cleanupProcesses: z.boolean().optional().describe('Whether to clean up the processes, including assignments, of the stage being switched away from. Default is true. Set to false to opt out of this cleanup feature.'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

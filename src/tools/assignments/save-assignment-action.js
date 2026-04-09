@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -18,79 +19,20 @@ export class SaveAssignmentActionTool extends BaseTool {
     return {
       name: 'save_assignment_action',
       description: 'Save assignment action form data without executing the action. Implements "Save for later" functionality that preserves form data in progress so changes will not be lost when returned to the assignment. If no eTag is provided, automatically fetches the latest eTag from the assignment for seamless operation. Available for Connector actions like Collect info steps, screen flow assignments and customized approval steps. Required field validations are ignored - only server-side validations (dictionary validations) are performed. The saved form data can be retrieved later when the assignment is reopened for continued editing or action execution.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          assignmentID: {
-            type: 'string',
-            description: 'Assignment ID. Format: ASSIGN-WORKLIST {caseID}!{processID}. Example: "ASSIGN-WORKLIST MYORG-APP-WORK C-1001!PROCESS""ASSIGN-WORKLIST PBANK-LOAN-WORK V-76003!REVIEW_FLOW". This uniquely identifies the specific assignment instance where form data will be saved.'
-          },
-          actionID: {
-            type: 'string',
-            description: 'Action ID from assignment (Example: "pyApproval", "Submit"). CRITICAL: Action IDs are CASE-SENSITIVE and have no spaces even if display names do ("Complete Review" → "CompleteReview"). Use get_assignment to find correct ID from actions array - use "ID" field not "name" field.'
-          },
-          eTag: {
-            type: 'string',
-            description: 'Optional. Auto-fetched if omitted. For faster execution, use eTag from previous response.'
-          },
-          content: {
-            type: 'object',
-            description: 'Optional map of scalar properties and embedded page properties containing form data to be saved. Only fields that are part of the assignment action\'s view can be saved. Field names should match the property names defined in the Pega application. Example: {"CustomerName": "John Doe", "RequestAmount": 5000, "Comments": "Initial request details"}. This data will be preserved and available when the assignment is reopened.'
-          },
-          pageInstructions: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                instruction: {
-                  type: 'string',
-                  enum: ['UPDATE', 'REPLACE', 'DELETE', 'APPEND', 'INSERT', 'MOVE'],
-                  description: 'Page instruction type. UPDATE (add fields to page), REPLACE (replace entire page), DELETE (remove page), APPEND (add item to page list), INSERT (insert item in page list), MOVE (reorder page list items)'
-                },
-                target: {
-                  type: 'string',
-                  description: 'Target embedded page name'
-                },
-                content: {
-                  type: 'object',
-                  description: 'Content to set on the embedded page (required for UPDATE and REPLACE)'
-                }
-              },
-              required: ['instruction', 'target'],
-              description: 'Page operation for embedded pages. Use REPLACE instruction to set embedded page references with full object including pzInsKey. Example: {"instruction": "REPLACE", "target": "PageName", "content": {"Property": "value", "pyID": "ID-123", "pzInsKey": "CLASS-NAME ID-123"}}'
-            },
-            description: 'Optional list of page-related operations for embedded pages, page lists, or page groups. Required for setting embedded page references. Only pages included in the assignment action\'s view can be modified.'
-          },
-          attachments: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                fileName: {
-                  type: 'string',
-                  description: 'Name of the attachment file'
-                },
-                fileContent: {
-                  type: 'string',
-                  description: 'Base64 encoded file content'
-                },
-                mimeType: {
-                  type: 'string',
-                  description: 'MIME type of the attachment'
-                }
-              },
-              description: 'Attachment object with file details and metadata'
-            },
-            description: 'Optional list of attachments to be added to specific attachment fields included in the assignment action\'s view during the save operation. Each attachment entry specifies the attachment details and target field. Only attachment fields included in the assignment action\'s view can be modified during save.'
-          },
-          originChannel: {
-            type: 'string',
-            description: 'Optional origin channel identifier for this service request. Indicates the source of the save request for tracking and audit purposes. Examples: "Web", "Mobile", "WebChat". Default value is "Web" if not specified.'
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['assignmentID', 'actionID']
-      }
+      inputSchema: z.object({
+        assignmentID: z.string().describe('Assignment ID. Format: ASSIGN-WORKLIST {caseID}!{processID}. Example: "ASSIGN-WORKLIST MYORG-APP-WORK C-1001!PROCESS""ASSIGN-WORKLIST PBANK-LOAN-WORK V-76003!REVIEW_FLOW". This uniquely identifies the specific assignment instance where form data will be saved.'),
+        actionID: z.string().describe('Action ID from assignment (Example: "pyApproval", "Submit"). CRITICAL: Action IDs are CASE-SENSITIVE and have no spaces even if display names do ("Complete Review" → "CompleteReview"). Use get_assignment to find correct ID from actions array - use "ID" field not "name" field.'),
+        eTag: z.string().optional().describe('Optional. Auto-fetched if omitted. For faster execution, use eTag from previous response.'),
+        content: z.looseObject({}).optional().describe('Optional map of scalar properties and embedded page properties containing form data to be saved. Only fields that are part of the assignment action\'s view can be saved. Field names should match the property names defined in the Pega application. Example: {"CustomerName": "John Doe", "RequestAmount": 5000, "Comments": "Initial request details"}. This data will be preserved and available when the assignment is reopened.'),
+        pageInstructions: z.array(z.object({
+          instruction: z.enum(['UPDATE', 'REPLACE', 'DELETE', 'APPEND', 'INSERT', 'MOVE']).describe('Page instruction type. UPDATE (add fields to page), REPLACE (replace entire page), DELETE (remove page), APPEND (add item to page list), INSERT (insert item in page list), MOVE (reorder page list items)'),
+          target: z.string().describe('Target embedded page name'),
+          content: z.looseObject({}).optional().describe('Content to set on the embedded page (required for UPDATE and REPLACE)')
+        }).describe('Page operation for embedded pages. Use REPLACE instruction to set embedded page references with full object including pzInsKey. Example: {"instruction": "REPLACE", "target": "PageName", "content": {"Property": "value", "pyID": "ID-123", "pzInsKey": "CLASS-NAME ID-123"}}')).optional().describe('Optional list of page-related operations for embedded pages, page lists, or page groups. Required for setting embedded page references. Only pages included in the assignment action\'s view can be modified.'),
+        attachments: z.array(z.looseObject({})).optional().describe('Optional list of attachments to be added to specific attachment fields included in the assignment action\'s view during the save operation. Each attachment entry specifies the attachment details and target field. Only attachment fields included in the assignment action\'s view can be modified during save.'),
+        originChannel: z.string().optional().describe('Optional origin channel identifier for this service request. Indicates the source of the save request for tracking and audit purposes. Examples: "Web", "Mobile", "WebChat". Default value is "Web" if not specified.'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

@@ -127,6 +127,7 @@ export class OAuth2Client {
         throw new Error(`OAuth2 configuration incomplete in ${configSource}. Need baseUrl, clientId, and clientSecret.`);
       }
 
+      console.error(`🔄 Fetching new access token using ${clientId} and ${clientSecret} from ${tokenUrl}`);
       const response = await fetch(tokenUrl, {
         method: 'POST',
         headers: {

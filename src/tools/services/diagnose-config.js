@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 
 export class DiagnoseConfigTool extends BaseTool {
@@ -15,11 +16,7 @@ export class DiagnoseConfigTool extends BaseTool {
     return {
       name: 'diagnose_pega_config',
       description: 'Diagnose Pega configuration and environment variables to troubleshoot connection issues. Shows what configuration the MCP server is using (without exposing secrets).',
-      inputSchema: {
-        type: 'object',
-        properties: {},
-        required: []
-      }
+      inputSchema: z.looseObject({})
     };
   }
 

@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 import {
@@ -22,82 +23,25 @@ export class RefreshCaseActionTool extends BaseTool {
     return {
       name: 'refresh_case_action',
       description: 'Refresh case action form data with updated values after property changes, execute Data Transforms, and handle table row operations in modals. If no eTag is provided, automatically fetches the latest eTag from the case action for seamless operation. Supports form refresh settings configured in Flow Action rules, generative AI form filling, and embedded list operations with comprehensive validation and preprocessing execution. The API validates case and action IDs, retrieves view data, and returns information about fields affected by the refresh action. Supports Pega Infinity \'25 features including table row operations in modals.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          caseID: {
-            type: 'string',
-            description: 'Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces.'
-          },
-          actionID: {
-            type: 'string',
-            description: 'Action ID for case/stage action (Example: "pyUpdateCaseDetails", "pyApproval"). CRITICAL: Action IDs are CASE-SENSITIVE and have no spaces even if display names do ("Edit details" → "pyUpdateCaseDetails"). Use get_case to find correct ID from availableActions array - use "ID" field not "name" field.'
-          },
-          eTag: {
-            type: 'string',
-            description: 'Optional. Auto-fetched if omitted. For faster execution, use eTag from previous response.'
-          },
-          refreshFor: {
-            type: 'string',
-            description: 'Property name that triggers refresh when changed. Executes Data Transform from form refresh settings.'
-          },
-          fillFormWithAI: {
-            type: 'boolean',
-            description: 'Whether to fill form with AI-generated sample values. Requires EnableGenerativeAI toggle. Default: false'
-          },
-          operation: {
-            type: 'string',
-            enum: ['showRow', 'submitRow'],
-            description: 'String value indicating table row operation type for embedded list properties using modals (Pega Infinity \'25+ feature). "showRow" is used when a row is being added or edited in a modal, triggering preprocessing of the interestPageActionID Action. "submitRow" is used when a row is being submitted, triggering validation and post-processing of the interestPageActionID Action. Only supported for table row operations in modals.'
-          },
-          content: {
-            type: 'object',
-            description: 'Map of scalar properties and embedded page properties to be merged into the case during the refresh operation. Field values provided here will overwrite any settings made from preprocessing Data Transforms. Only fields that are present in the case action\'s view and are editable can be effectively updated. Non-visible fields cannot be set and updates to them may be lost in subsequent operations.'
-          },
-          pageInstructions: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                instruction: {
-                  type: 'string',
-                  enum: ['UPDATE', 'REPLACE', 'DELETE', 'APPEND', 'INSERT', 'MOVE'],
-                  description: 'Page instruction type. UPDATE (add fields to page), REPLACE (replace entire page), DELETE (remove page), APPEND (add item to page list), INSERT (insert item in page list), MOVE (reorder page list items)'
-                },
-                target: {
-                  type: 'string',
-                  description: 'Target embedded page name'
-                },
-                content: {
-                  type: 'object',
-                  description: 'Content to set on the embedded page (required for UPDATE and REPLACE)'
-                }
-              },
-              required: ['instruction', 'target'],
-              description: 'Page operation for embedded pages. Use REPLACE instruction to set embedded page references with full object including pzInsKey. Example: {"instruction": "REPLACE", "target": "PageName", "content": {"Property": "value", "pyID": "ID-123", "pzInsKey": "CLASS-NAME ID-123"}}'
-            },
-            description: 'Optional list of page-related operations for embedded pages, page lists, or page groups. Required for setting embedded page references.'
-          },
-          contextData: {
-            type: 'boolean',
-            description: 'Boolean value to fetch contextData or full view response. When true, returns only context data for improved performance. When false or not provided, returns the full view response including UI metadata. Default: false.'
-          },
-          interestPage: {
-            type: 'string',
-            description: 'Target page specification for table row operations on embedded list properties. Example: ".OrderItems(1)" to target the first item in the OrderItems page list. This parameter is required when operation parameter is specified. Used with interestPageActionID to identify the specific embedded page and action for modal-based table operations.'
-          },
-          interestPageActionID: {
-            type: 'string',
-            description: 'Action ID for the embedded list operation Action rule. Example: "EmbeddedAction". This specifies the Flow Action rule that defines the preprocessing, validation, and post-processing logic for the table row operation. Required when operation parameter is specified. Only fields present in this Action\'s view can be modified during pre/post-processing.'
-          },
-          originChannel: {
-            type: 'string',
-            description: 'Optional origin channel identifier for this service request. Indicates the source of the request for tracking and audit purposes. Examples: "Web", "Mobile", "WebChat". Default value is "Web" if not specified.'
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['caseID', 'actionID']
-      }
+      inputSchema: z.object({
+        caseID: z.string().describe('Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces.'),
+        actionID: z.string().describe('Action ID for case/stage action (Example: "pyUpdateCaseDetails", "pyApproval"). CRITICAL: Action IDs are CASE-SENSITIVE and have no spaces even if display names do ("Edit details" → "pyUpdateCaseDetails"). Use get_case to find correct ID from availableActions array - use "ID" field not "name" field.'),
+        eTag: z.string().optional().describe('Optional. Auto-fetched if omitted. For faster execution, use eTag from previous response.'),
+        refreshFor: z.string().optional().describe('Property name that triggers refresh when changed. Executes Data Transform from form refresh settings.'),
+        fillFormWithAI: z.boolean().optional().describe('Whether to fill form with AI-generated sample values. Requires EnableGenerativeAI toggle. Default: false'),
+        operation: z.enum(['showRow', 'submitRow']).optional().describe('String value indicating table row operation type for embedded list properties using modals (Pega Infinity \'25+ feature). "showRow" is used when a row is being added or edited in a modal, triggering preprocessing of the interestPageActionID Action. "submitRow" is used when a row is being submitted, triggering validation and post-processing of the interestPageActionID Action. Only supported for table row operations in modals.'),
+        content: z.looseObject({}).optional().describe('Map of scalar properties and embedded page properties to be merged into the case during the refresh operation. Field values provided here will overwrite any settings made from preprocessing Data Transforms. Only fields that are present in the case action\'s view and are editable can be effectively updated. Non-visible fields cannot be set and updates to them may be lost in subsequent operations.'),
+        pageInstructions: z.array(z.object({
+          instruction: z.enum(['UPDATE', 'REPLACE', 'DELETE', 'APPEND', 'INSERT', 'MOVE']).describe('Page instruction type. UPDATE (add fields to page), REPLACE (replace entire page), DELETE (remove page), APPEND (add item to page list), INSERT (insert item in page list), MOVE (reorder page list items)'),
+          target: z.string().describe('Target embedded page name'),
+          content: z.looseObject({}).optional().describe('Content to set on the embedded page (required for UPDATE and REPLACE)')
+        }).describe('Page operation for embedded pages. Use REPLACE instruction to set embedded page references with full object including pzInsKey. Example: {"instruction": "REPLACE", "target": "PageName", "content": {"Property": "value", "pyID": "ID-123", "pzInsKey": "CLASS-NAME ID-123"}}')).optional().describe('Optional list of page-related operations for embedded pages, page lists, or page groups. Required for setting embedded page references.'),
+        contextData: z.boolean().optional().describe('Boolean value to fetch contextData or full view response. When true, returns only context data for improved performance. When false or not provided, returns the full view response including UI metadata. Default: false.'),
+        interestPage: z.string().optional().describe('Target page specification for table row operations on embedded list properties. Example: ".OrderItems(1)" to target the first item in the OrderItems page list. This parameter is required when operation parameter is specified. Used with interestPageActionID to identify the specific embedded page and action for modal-based table operations.'),
+        interestPageActionID: z.string().optional().describe('Action ID for the embedded list operation Action rule. Example: "EmbeddedAction". This specifies the Flow Action rule that defines the preprocessing, validation, and post-processing logic for the table row operation. Required when operation parameter is specified. Only fields present in this Action\'s view can be modified during pre/post-processing.'),
+        originChannel: z.string().optional().describe('Optional origin channel identifier for this service request. Indicates the source of the request for tracking and audit purposes. Examples: "Web", "Mobile", "WebChat". Default value is "Web" if not specified.'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

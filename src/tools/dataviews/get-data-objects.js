@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,18 +17,10 @@ export class GetDataObjectsTool extends BaseTool {
     return {
       name: 'get_data_objects',
       description: 'Retrieve list of available data objects with metadata and HATEOAS links. Can optionally filter by data object type (data or case).',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          type: {
-            type: 'string',
-            enum: ['data', 'case'],
-            description: 'Filter for data object type. Returns "data" or "case" type objects.'
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: []
-      }
+      inputSchema: z.object({
+        type: z.enum(['data', 'case']).optional().describe('Filter for data object type. Returns "data" or "case" type objects.'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,17 +17,10 @@ export class GetCaseDescendantsTool extends BaseTool {
     return {
       name: 'get_case_descendants',
       description: 'Get descendants of a case instance. This API loops through all the child cases recursively descending from the specific one, and returns the assignments and actions for each. If the current user does not have access to a given child case, they can only see limited information, and can not drill down into any child cases.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          caseID: {
-            type: 'string',
-            description: 'Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces."OSIEO3-DOCSAPP-WORK T-561003". a complete case identifier including spaces and special characters. The case must exist and be accessible to the current user.'
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['caseID']
-      }
+      inputSchema: z.object({
+        caseID: z.string().describe('Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces."OSIEO3-DOCSAPP-WORK T-561003". a complete case identifier including spaces and special characters. The case must exist and be accessible to the current user.'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

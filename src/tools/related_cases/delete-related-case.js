@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,21 +17,11 @@ export class DeleteRelatedCaseTool extends BaseTool {
     return {
       name: 'delete_related_case',
       description: 'Remove related work association between two cases by deleting a specific relationship',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          caseID: {
-            type: 'string',
-            description: 'Primary case ID from which to remove the related case. Example: "ON6E5R-DIYRecipe-Work-RecipeCollection R-1008". a complete case identifier including spaces and special characters.'
-          },
-          related_caseID: {
-            type: 'string',
-            description: 'Related case ID to be removed from the primary case. Example: "ON6E5R-DIYRecipe-Work-RecipeCollection R-1009". a complete case identifier including spaces and special characters.'
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['caseID', 'related_caseID']
-      }
+      inputSchema: z.object({
+        caseID: z.string().describe('Primary case ID from which to remove the related case. Example: "ON6E5R-DIYRecipe-Work-RecipeCollection R-1008". a complete case identifier including spaces and special characters.'),
+        related_caseID: z.string().describe('Related case ID to be removed from the primary case. Example: "ON6E5R-DIYRecipe-Work-RecipeCollection R-1009". a complete case identifier including spaces and special characters.'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

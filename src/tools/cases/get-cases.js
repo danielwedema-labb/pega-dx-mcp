@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -32,13 +33,9 @@ export class GetCasesTool extends BaseTool {
     return {
       name: 'get_cases',
       description: 'Get all cases created by authenticated user (V1 EXCLUSIVE - max 500 cases, oldest to newest). V2 users should use Data Views instead. Requires pxGetCases privilege.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: []
-      }
+      inputSchema: z.object({
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

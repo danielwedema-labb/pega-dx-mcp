@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,27 +17,12 @@ export class GetParticipantTool extends BaseTool {
     return {
       name: 'get_participant',
       description: 'Get detailed information about a specific participant in a Pega case by case ID and participant ID. Returns participant details including personal information, contact details, and optional UI resources for form display.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          caseID: {
-            type: 'string',
-            description: 'Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces."ON6E5R-DIYRecipe-Work-RecipeCollection R-1008". a complete case identifier including spaces and special characters.'
-          },
-          participantID: {
-            type: 'string',
-            description: 'Participant ID to get details for. This identifies the specific participant within the case whose information you want to retrieve.'
-          },
-          viewType: {
-            type: 'string',
-            enum: ['form', 'none'],
-            description: 'UI resources to return. "form" returns form UI metadata in uiResources object for display purposes, "none" returns no UI resources. Default: "form".',
-            default: 'form'
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['caseID', 'participantID']
-      }
+      inputSchema: z.object({
+        caseID: z.string().describe('Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces."ON6E5R-DIYRecipe-Work-RecipeCollection R-1008". a complete case identifier including spaces and special characters.'),
+        participantID: z.string().describe('Participant ID to get details for. This identifies the specific participant within the case whose information you want to retrieve.'),
+        viewType: z.enum(['form', 'none']).default('form').describe('UI resources to return. "form" returns form UI metadata, "none" returns no UI resources. Default: "form".'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

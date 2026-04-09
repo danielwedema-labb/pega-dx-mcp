@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,34 +17,13 @@ export class AddCaseTagsTool extends BaseTool {
     return {
       name: 'add_case_tags',
       description: 'Add multiple tags to a case',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          caseID: {
-            type: 'string',
-            description: 'Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces."OSIEO3-DOCSAPP-WORK T-561003". a complete case identifier including spaces and special characters.'
-          },
-          tags: {
-            type: 'array',
-            description: 'Array of tag objects to add to the case. Each tag object must contain a Name property.',
-            items: {
-              type: 'object',
-              properties: {
-                Name: {
-                  type: 'string',
-                  description: 'Name of the tag to add to the case'
-                }
-              },
-              required: ['Name'],
-              additionalProperties: false
-            },
-            minItems: 1,
-            maxItems: 50
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['caseID', 'tags']
-      }
+      inputSchema: z.object({
+        caseID: z.string().describe('Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces."OSIEO3-DOCSAPP-WORK T-561003". a complete case identifier including spaces and special characters.'),
+        tags: z.array(z.object({
+          Name: z.string().describe('Name of the tag to add to the case')
+        })).min(1).max(50).describe('Array of tag objects to add to the case. Each tag object must contain a Name property.'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

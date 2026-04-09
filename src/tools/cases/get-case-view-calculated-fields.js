@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,69 +17,21 @@ export class GetCaseViewCalculatedFieldsTool extends BaseTool {
     return {
       name: 'get_case_view_calculated_fields',
       description: 'Get calculated fields for a given case view. Retrieves only the requested calculated fields from the case view. All requested calculated fields in the request body must be included in the view. Any requested fields that are not part of the view will be filtered out.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          caseID: {
-            type: 'string',
-            description: 'Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces."MYORG-SERVICES-WORK S-293001". a complete case identifier including spaces and special characters.'
-          },
-          viewID: {
-            type: 'string',
-            description: 'Name of the view from which calculated fields are retrieved - ID of the view rule. This identifies the specific view containing the calculated fields to be evaluated.'
-          },
-          calculations: {
-            type: 'object',
-            description: 'Object containing the fields data to retrieve their respective calculated values. Must contain a "fields" array with field objects.',
-            properties: {
-              fields: {
-                type: 'array',
-                description: 'Array of field objects specifying which calculated fields to retrieve from the view.',
-                items: {
-                  type: 'object',
-                  properties: {
-                    name: {
-                      type: 'string',
-                      description: 'Name of the calculated field to retrieve. Can include property references starting with dot notation (Example: ".LoanEligibilityCheckListCountAll").'
-                    },
-                    context: {
-                      type: 'string',
-                      description: 'Context for the calculated field evaluation. Optional parameter that specifies the context in which the field should be evaluated. Default: "content".',
-                      default: 'content'
-                    }
-                  },
-                  required: ['name'],
-                  additionalProperties: false
-                },
-                minItems: 1
-              },
-              whens: {
-                type: 'array',
-                description: 'Array of when condition objects for conditional field evaluation. Optional parameter for advanced field calculation scenarios.',
-                items: {
-                  type: 'object',
-                  properties: {
-                    name: {
-                      type: 'string',
-                      description: 'Name of the when condition.'
-                    },
-                    context: {
-                      type: 'string',
-                      description: 'Context for the when condition evaluation.'
-                    }
-                  },
-                  required: ['name'],
-                  additionalProperties: false
-                }
-              }
-            },
-            required: ['fields'],
-            additionalProperties: false
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['caseID', 'viewID', 'calculations']
-      }
+      inputSchema: z.object({
+        caseID: z.string().describe('Case ID. Example: "MYORG-APP-WORK C-1001". Complete identifier including spaces."MYORG-SERVICES-WORK S-293001". a complete case identifier including spaces and special characters.'),
+        viewID: z.string().describe('Name of the view from which calculated fields are retrieved - ID of the view rule. This identifies the specific view containing the calculated fields to be evaluated.'),
+        calculations: z.object({
+          fields: z.array(z.object({
+            name: z.string().describe('Name of the calculated field to retrieve. Can include property references starting with dot notation (Example: ".LoanEligibilityCheckListCountAll").'),
+            context: z.string().optional().describe('Context for the calculated field evaluation. Optional parameter that specifies the context in which the field should be evaluated. Default: "content".')
+          })).min(1).describe('Array of field objects specifying which calculated fields to retrieve from the view.'),
+          whens: z.array(z.object({
+            name: z.string().describe('Name of the when condition.'),
+            context: z.string().optional().describe('Context for the when condition evaluation.')
+          })).optional().describe('Array of when condition objects for conditional field evaluation. Optional parameter for advanced field calculation scenarios.')
+        }).describe('Object containing the fields data to retrieve their respective calculated values. Must contain a "fields" array with field objects.'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

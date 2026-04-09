@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 import {
@@ -22,32 +23,13 @@ export class GetAssignmentActionTool extends BaseTool {
     return {
       name: 'get_assignment_action',
       description: 'Get detailed information about a specific action that can be performed on an assignment. Retrieves assignment action defined for an assignment step in a case process, including UI metadata and preprocessing execution. If the case type uses pessimistic locking and the client uses Constellation, this request may lock the case. Get details for ONE specific action. Often optional - most workflows use: get_assignment (all actions + eTag) → perform_assignment_action. Use this when you need action-specific details.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          assignmentID: {
-            type: 'string',
-            description: 'Assignment ID. Format: ASSIGN-WORKLIST {caseID}!{processID}. Example: "ASSIGN-WORKLIST MYORG-APP-WORK C-1001!PROCESS"'
-          },
-          actionID: {
-            type: 'string',
-            description: 'Action ID from assignment (Example: "pyApproval", "Submit"). CRITICAL: Action IDs are CASE-SENSITIVE and have no spaces even if display names do ("Complete Review" → "CompleteReview"). Use get_assignment to find correct ID from actions array - use "ID" field not "name" field.'
-          },
-          viewType: {
-            type: 'string',
-            enum: ['form', 'page'],
-            description: 'UI resources to return. "form" returns the form UI metadata (in read-only review mode, without page-specific metadata), "page" returns the full page (in read-only review mode) UI metadata in the uiResources object',
-            default: 'page'
-          },
-          excludeAdditionalActions: {
-            type: 'boolean',
-            description: 'Whether to exclude additional action information. Set true if actions already retrieved. Default: false',
-            default: false
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['assignmentID', 'actionID']
-      }
+      inputSchema: z.object({
+        assignmentID: z.string().describe('Assignment ID. Format: ASSIGN-WORKLIST {caseID}!{processID}. Example: "ASSIGN-WORKLIST MYORG-APP-WORK C-1001!PROCESS"'),
+        actionID: z.string().describe('Action ID from assignment (Example: "pyApproval", "Submit"). CRITICAL: Action IDs are CASE-SENSITIVE and have no spaces even if display names do ("Complete Review" → "CompleteReview"). Use get_assignment to find correct ID from actions array - use "ID" field not "name" field.'),
+        viewType: z.enum(['form', 'page']).optional().describe('UI resources to return. "form" returns the form UI metadata (in read-only review mode, without page-specific metadata), "page" returns the full page (in read-only review mode) UI metadata in the uiResources object'),
+        excludeAdditionalActions: z.boolean().optional().describe('Whether to exclude additional action information. Set true if actions already retrieved. Default: false'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

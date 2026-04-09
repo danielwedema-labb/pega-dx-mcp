@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,21 +17,11 @@ export class GetCaseTypeBulkActionTool extends BaseTool {
     return {
       name: 'get_case_type_bulk_action',
       description: 'Get bulk action metadata for a specific case type and action ID',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          caseTypeID: {
-            type: 'string',
-            description: 'ID of the case type for which the case action metadata is being retrieved (Example: "Bug")'
-          },
-          actionID: {
-            type: 'string',
-            description: 'Action ID for case type bulk action (Example: "Clone", "pyUpdateCaseDetails"). CRITICAL: Action IDs are CASE-SENSITIVE and have no spaces even if display names do ("Edit details" → "pyUpdateCaseDetails"). Use get_case_types to discover available case types and their supported actions.'
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['caseTypeID', 'actionID']
-      }
+      inputSchema: z.object({
+        caseTypeID: z.string().describe('ID of the case type for which the case action metadata is being retrieved (Example: "Bug")'),
+        actionID: z.string().describe('Action ID for case type bulk action (Example: "Clone", "pyUpdateCaseDetails"). CRITICAL: Action IDs are CASE-SENSITIVE and have no spaces even if display names do ("Edit details" → "pyUpdateCaseDetails"). Use get_case_types to discover available case types and their supported actions.'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 

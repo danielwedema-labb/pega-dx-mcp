@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { BaseTool } from '../../registry/base-tool.js';
 import { getSessionCredentialsSchema } from '../../utils/tool-schema.js';
 
@@ -16,17 +17,10 @@ export class GetDataViewMetadataTool extends BaseTool {
     return {
       name: 'get_data_view_metadata',
       description: 'Retrieve data view metadata which includes data view parameters and list of queryable fields. Supports both queryable and non-queryable data views.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          dataViewID: {
-            type: 'string',
-            description: 'ID of the data view to retrieve metadata for. Example: "D_CaseList", "D_WorkBasket"'
-          },
-          sessionCredentials: getSessionCredentialsSchema()
-        },
-        required: ['dataViewID']
-      }
+      inputSchema: z.object({
+        dataViewID: z.string().describe('ID of the data view to retrieve metadata for. Example: "D_CaseList", "D_WorkBasket"'),
+        sessionCredentials: getSessionCredentialsSchema().optional()
+      })
     };
   }
 
